@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+</html>
+    <head>
+        <meta charset="utf-8">
+    </head>
+    <body> 
+        <h3>WebSocketTest</h3>
+        <div id="login">
+            <div>
+                <input id="serverIP" type="text" placeholder="Server IP" value="127.0.0.1" autofocus="autofocus" />
+                <input id="serverPort" type="text" placeholder="Server port" value="5000" />
+                <input id="btnConnect" type="button" value="Connect" onclick="connect()" />
+            </div>
+            <div>
+                <input id="sendText" type="text" placeholder="Send text" value="I'm WebSocket Client Test Msg!" />
+                <input id="btnSend" type="button" value="Send" onclick="send()" />
+            </div>
+        </div>
+    </body>
+    <script>
+        var socket;
+ 
+        function connect() {
+            var host = "ws://" + $("serverIP").value + ":" + $("serverPort").value + "/"
+            socket = new WebSocket(host);
+            try {
+ 
+                socket.onopen = function (msg) {
+                    $("btnConnect").disabled = true;
+                    alert("Connection successful");
+                };
+ 
+                socket.onmessage = function (msg) {
+                    if (typeof msg.data == "string") {
+                        displayContent(msg.data);
+                    }
+                    else {
+                        alert("Non-text messages");
+                    }
+                };
+ 
+                socket.onclose = function (msg) { alert("socket closed!") };
+            }
+            catch (ex) {
+                log(ex);
+            }
+        }
+ 
+        function send() {
+            var msg = $("sendText").value
+            socket.send(msg);
+        }
+ 
+        window.onbeforeunload = function () {
+            try {
+                socket.close();
+                socket = null;
+            }
+            catch (ex) {
+            }
+        };
+ 
+        function $(id) { return document.getElementById(id); }
+        function onkey(event) { if (event.keyCode == 13) { send(); } }
+    </script>
+</html>
