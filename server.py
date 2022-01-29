@@ -27,7 +27,7 @@ async def accon(svr):
         await loop.create_task(client(conn,addr))
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server.bind(('localhost', 3000))
+server.bind(('localhost', 6655))
 server.listen()
-loop = asyncio.get_event_loop()
+loop = asyncio.new_event_loop()
 loop.run_until_complete(accon(server))
