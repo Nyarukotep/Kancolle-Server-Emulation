@@ -22,12 +22,12 @@ class Request:
     def parse(self, buffer):
         self.cache = self.cache + buffer.decode()
         while '\r\n' in self.cache and not self.body:
-            temp, self.cache = self.cache.split('\r\n', 1)
+            line, self.cache = self.cache.split('\r\n', 1)
             if not self.method:
-                self.method, self.url, self.version = temp.split()
-            elif temp:
-                self.hdict(temp)
-            elif not temp:
+                self.method, self.url, self.version = line.split()
+            elif line:
+                self.hdict(line)
+            elif not line:
                 if self.length < 0:
                     self.length = 0
                 else:

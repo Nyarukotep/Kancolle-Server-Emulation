@@ -29,28 +29,33 @@ class server:
             self.loop.create_task(self.access(conn,addr))
     
     async def access(self,conn,addr):
-        print('connection start')
+        print(addr,'Start connection')
         while True:
+            t = self.timeout
             req = http.Request()
             while req.length:
                 try:
-                    buffer = await asyncio.wait_for(self.recv(conn),self.timeout)
+                    buffer = await asyncio.wait_for(self.recv(conn),t)
                 except asyncio.TimeoutError:
-                    print('timeout!')
+                    print(addr, 'Connection close due to timeout')
                     conn.close()
                     return
                 if buffer:
                     req.parse(buffer)
                 else:
                     conn.close()
+                    print(addr, 'Connection closed by client')
                     return
             req.debug()
             resp = b'HTTP/1.1 Hello World\r\nConnection: keep-alive\r\nContent-Length: 20\r\n\r\n<h1>Hello World</h1>'
             await self.loop.sock_sendall(conn, resp)
+            print(addr, 'Complete response')
             if req.connection != 'keep-alive':
+                print(addr, 'Connection close')
                 break
+            print(addr, 'Connection reuse')
         conn.close()
-        print('close')
+        print(addr, 'Connection close')
 
     async def recv(self,conn):
         data = await self.loop.sock_recv(conn,1024)
