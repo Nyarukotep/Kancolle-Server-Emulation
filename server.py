@@ -8,26 +8,53 @@ import framework.http as http
 #Response:
 # HTTP/1.1 200 OK
 #version status phrase header body
+class server:
+    def __init__(self, ip = 'localhost', port = 11455):
+        self.ip = ip
+        self.port = port
+        self.timeout = 5
+        self.loop = asyncio.new_event_loop()
+    
+    def start(self):
+        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server.bind((self.ip, self.port))
+        self.server.listen()
+        self.server.setblocking(False)
+        print(self.port)
+        self.loop.run_until_complete(self.listen())
+    
+    async def listen(self):
+        while True:
+            conn, addr = await self.loop.sock_accept(self.server)
+            self.loop.create_task(self.access(conn,addr))
+    
+    async def access(self,conn,addr):
+        print('connection start')
+        while True:
+            req = http.Request()
+            while req.length:
+                try:
+                    buffer = await asyncio.wait_for(self.recv(conn),self.timeout)
+                except asyncio.TimeoutError:
+                    print('timeout!')
+                    conn.close()
+                    return
+                if buffer:
+                    req.parse(buffer)
+                else:
+                    conn.close()
+                    return
+            req.debug()
+            resp = b'HTTP/1.1 Hello World\r\nConnection: keep-alive\r\nContent-Length: 20\r\n\r\n<h1>Hello World</h1>'
+            await self.loop.sock_sendall(conn, resp)
+            if req.connection != 'keep-alive':
+                break
+        conn.close()
+        print('close')
 
-async def client(conn, addr):
-    print('connection start')
-    req = http.Request()
-    while req.length:
-        recv = await loop.sock_recv(conn, 1024)
-        req.reqdec(recv)
-    req.debug()
-    resp = b'HTTP/1.1 Hello World\r\n\r\n<h1>Hello World</h1>'
-    await loop.sock_sendall(conn, resp)
-    conn.close()
-    print('close')
+    async def recv(self,conn):
+        data = await self.loop.sock_recv(conn,1024)
+        return data
 
-async def accon(svr):
-    while True:
-        conn, addr = await loop.sock_accept(svr)
-        await loop.create_task(client(conn,addr))
-
-server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server.bind(('localhost', 6655))
-server.listen()
-loop = asyncio.new_event_loop()
-loop.run_until_complete(accon(server))
+s=server()
+s.start()

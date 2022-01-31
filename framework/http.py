@@ -1,3 +1,4 @@
+__all__ = ['Request']
 class Request:
     def __init__(self):
         self.method = ''
@@ -6,10 +7,10 @@ class Request:
         self.connection = ''
         self.length = -1
         self.type = ''
-        self.frame = ''
         self.cache = ''
         self.header = dict()
         self.body = ''
+        self.websocket = 0
 
     def hdict(self, temp):
         key, value = temp.split(': ', 1)
@@ -18,27 +19,28 @@ class Request:
         if key == 'Content-Length': self.length = int(value)
         if key == 'Content-Type': self.type = value
 
-    def reqdec(self, buffer):
-        if not self.frame:
-            self.cache = self.cache + buffer.decode()
-            while '\r\n' in self.cache and not self.body:
-                temp, self.cache = self.cache.split('\r\n', 1)
-                if not self.method:
-                    self.method, self.url, self.version = temp.split()
-                elif temp:
-                    self.hdict(temp)
-                elif not temp and self.cache:
-                    self.body = self.body + self.cache
+    def parse(self, buffer):
+        self.cache = self.cache + buffer.decode()
+        while '\r\n' in self.cache and not self.body:
+            temp, self.cache = self.cache.split('\r\n', 1)
+            if not self.method:
+                self.method, self.url, self.version = temp.split()
+            elif temp:
+                self.hdict(temp)
+            elif not temp:
+                if self.length < 0:
+                    self.length = 0
+                else:
+                    self.body = self.body + self.cache[:self.length]
                     self.length = self.length - len(self.cache)
                     self.cache = ''
-                elif self.length:
-                    self.length = 0
-            if self.body:
-                self.body = self.body + self.cache
-                self.length = self.length - len(self.cache)
-                self.cache = ''
-        else:
-            self.method = self.method
+        if self.body:
+            self.body = self.body + self.cache[:self.length]
+            self.length = self.length - len(self.cache)
+            self.cache = ''
     
+    def error(self):
+        self.method = self.method
+
     def debug(self):
         print('\n'.join(['%s:%s' % item for item in self.__dict__.items()]))
