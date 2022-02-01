@@ -1,5 +1,6 @@
 import asyncio, numpy, socket
-import framework.http as http
+import framework as prot
+import emulation as kse
 #Request
 #method url version
 #GET /images/logo.png HTTP/1.1
@@ -9,31 +10,39 @@ import framework.http as http
 # HTTP/1.1 200 OK
 #version status phrase header body
 class server:
-    def __init__(self, ip = 'localhost', port = 11455):
+    def __init__(self, ip = 'localhost', port = 11456):
         self.ip = ip
         self.port = port
         self.timeout = 5
         self.loop = asyncio.new_event_loop()
     
-    def start(self):
+    def start(self, func = kse.asg):
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server.bind((self.ip, self.port))
+        while True:
+            try:
+                self.server.bind((self.ip, self.port))
+                break
+            except OSError:
+                self.port = self.port+1
         self.server.listen()
         self.server.setblocking(False)
-        print(self.port)
+        self.func = func
+        print('Start server at %s:%d' %(self.ip, self.port))
         self.loop.run_until_complete(self.listen())
     
     async def listen(self):
         while True:
             conn, addr = await self.loop.sock_accept(self.server)
-            self.loop.create_task(self.access(conn,addr))
+            self.loop.create_task(self.connection(conn,addr))
     
-    async def access(self,conn,addr):
+    async def connection(self,conn,addr):
         print(addr,'Start connection')
+        tag = 0
+        #tag, 0: standard; 1: websocket
         while True:
             t = self.timeout
-            req = http.Request()
-            while req.length:
+            mfc = prot.id(tag) #message from client
+            while mfc.length:
                 try:
                     buffer = await asyncio.wait_for(self.recv(conn),t)
                 except asyncio.TimeoutError:
@@ -41,25 +50,25 @@ class server:
                     conn.close()
                     return
                 if buffer:
-                    req.parse(buffer)
+                    mfc.parse(buffer)
                 else:
                     conn.close()
                     print(addr, 'Connection closed by client')
                     return
-            req.debug()
-            resp = b'HTTP/1.1 Hello World\r\nConnection: keep-alive\r\nContent-Length: 20\r\n\r\n<h1>Hello World</h1>'
-            await self.loop.sock_sendall(conn, resp)
+            mfc.debug()
+            mtc = self.func(mfc)
+            await self.loop.sock_sendall(conn, mtc)
             print(addr, 'Complete response')
-            if req.connection != 'keep-alive':
+            if mfc.connection != 'keep-alive':
                 print(addr, 'Connection close')
                 break
             print(addr, 'Connection reuse')
         conn.close()
         print(addr, 'Connection close')
 
+
     async def recv(self,conn):
         data = await self.loop.sock_recv(conn,1024)
         return data
-
 s=server()
-s.start()
+s.start(kse.asg)
