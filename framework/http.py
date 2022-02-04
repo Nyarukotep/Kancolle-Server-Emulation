@@ -1,11 +1,29 @@
+import asyncio
 __all__ = ['Request']
 class Request:
-    def __init__(self,addr):
+    def __init__(self, addr):
         self.start = {}
         self.header = {}
         self.body = ''
         self.cache = ''
         self.addr = addr
+
+    async def recv(self, loop, conn):
+
+        while self.header.get('Content-Length',1):
+            try:
+                buffer = await asyncio.wait_for(self.sock_recv(loop, conn),5)
+            except asyncio.TimeoutError:
+                print(self.addr, 'Connection close due to timeout')
+                raise Exception
+            if buffer:
+                self.parse(buffer)
+            else:
+                print(self.addr, 'Connection closed by client')
+                raise Exception
+    async def sock_recv(self, loop, conn):
+        data = await loop.sock_recv(conn,1024)
+        return data
 
     def parse(self, buffer):
         self.cache = self.cache + buffer.decode()
@@ -39,7 +57,7 @@ class Request:
             self.cache = self.cache[t:]
 
     def __repr__(self):
-        return 'Request from '+ str(self.addr)\
+        return 'Request from ' + str(self.addr)\
             + '\nStart line:\n\t' + '\n\t'.join(['%s:%s' % item for item in self.start.items()])\
             + '\nHeader:\n\t'+'\n\t'.join(['%s:%s' % item for item in self.header.items()])\
             + '\nBody:\n\t'+ repr(self.body)

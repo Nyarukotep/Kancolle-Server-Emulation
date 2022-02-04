@@ -35,34 +35,27 @@ class server:
             conn, addr = await self.loop.sock_accept(self.server)
             self.loop.create_task(self.connection(conn,addr))
     
-    async def connection(self,conn,addr):
+    async def connection(self, conn, addr):
         print(addr,'Start connection')
         tag = 0
         #tag, 0: standard; 1: websocket
         while True:
             t = self.timeout
-            mfc = prot.id(tag,addr) #message from client
-            while mfc.header.get('Content-Length',1):
-                try:
-                    buffer = await asyncio.wait_for(self.recv(conn),t)
-                except asyncio.TimeoutError:
-                    print(addr, 'Connection close due to timeout')
-                    conn.close()
-                    return
-                if buffer:
-                    mfc.parse(buffer)
-                else:
-                    conn.close()
-                    print(addr, 'Connection closed by client')
-                    return
-            print(mfc)
-            mtc = self.func(mfc)
-            await self.loop.sock_sendall(conn, mtc)
+            req = prot.id(tag,addr)
+            try:
+                await req.recv(self.loop, conn) #message from client
+            except:
+                conn.close()
+                return
+            print(req)
+            rsp = self.func(req)
+            await self.loop.sock_sendall(conn, rsp)
             print(addr, 'Complete response')
-            if mfc.header.get('Connection','None') != 'keep-alive':
+            if req.header.get('Connection','None') != 'keep-alive':
                 print(addr, 'Connection close')
                 break
             print(addr, 'Connection reuse')
+
         conn.close()
         print(addr, 'Connection close')
 
