@@ -6,6 +6,8 @@ def asg(mfc):
     return mtc()
  
 def test():
+    str='成功'
+    str = str.encode('unicode-escape')
     msg = b'HTTP/1.1 Hello World\r\n'\
         b'Connection: keep-alive\r\n'\
         b'Content-Length: 20\r\n\r\n'\
