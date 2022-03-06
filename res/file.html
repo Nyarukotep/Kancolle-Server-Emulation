@@ -1,0 +1,1954 @@
+<!DOCTYPE html>
+<head>
+<title>WebSocket</title>
+<meta charset="utf-8">
+<style>
+    /** CORE STYLES **/
+*,
+*:before,
+*:after {
+    margin: 0;
+    padding: 0;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    user-select: none;
+}
+
+html {
+    font-size: 62.5%;
+    font-family: "Consolas", monospace;
+}
+
+#desktop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url("http://cdn.arnellebalane.com/images/virtual-filesystem/wallpaper.png");
+    background-size: cover;
+    cursor: default;
+    overflow: hidden;
+}
+
+
+
+/** BASE ELEMENT STYLES **/
+input {
+    position: relative;
+    display: inline-block;
+    vertical-align: top;
+    width: 28px;
+    height: 22px;
+    font: normal 1.2rem "Consolas", monospace;
+    color: #999999;
+    background-color: #ffffff;
+    border: none;
+    border-radius: 3px;
+    padding: 0 5px;
+    box-shadow: 0 1px 1px rgba(40, 40, 40, 0.25);
+    outline: none;
+}
+
+input:focus {
+    color: #333333;
+}
+
+
+
+/** UTILITY CLASSES **/
+.hidden {
+    display: none;
+}
+
+.error {
+    box-shadow: 0 0 2px 2px rgba(255, 95, 80, 0.4) !important;
+}
+
+.clearfix:after {
+    content: "";
+    display: block;
+    clear: both;
+}
+
+
+
+/** GENERIC WINDOW STYLES **/
+.window {
+    position: absolute;
+    top: 100px;
+    left: 100px;
+    z-index: 1;
+    width: 700px;
+    height: 400px;
+    border-top: 30px solid #eeeeee;
+    border-radius: 3px;
+    background-color: #ffffff;
+    box-shadow: inset 0 1px 0 rgba(14, 14, 14, 0.3),
+                0 9px 20px 6px rgba(50, 50, 50, 0.5);
+}
+
+.window:before {
+    content: attr(data-title);
+    display: block;
+    font-size: 1.4rem;
+    line-height: 28px;
+    text-align: center;
+    color: #333333;
+    margin-top: -28px;
+}
+
+.window header {
+    position: absolute;
+    top: -30px;
+    left: 0;
+    right: 0;
+    height: 30px;
+    padding-left: 10px;
+}
+
+.window .action {
+    float: left;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background-color: #cdcdcd;
+    margin: 8px 5px 0 0;
+    cursor: pointer;
+}
+
+.window.focused .action.close {
+    background-color: #ff5f50;
+}
+
+.window.focused .action.minimize {
+    background-color: #fec107;
+}
+
+.window.focused .action.maximize {
+    background-color: #16CF36;
+}
+
+.window main {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: auto;
+}
+
+
+
+/** CUSTOM WINDOW OVERRIDES **/
+.finder header {
+    height: 60px;
+}
+
+.finder .action-bar {
+    width: calc(100% + 10px);
+    height: 30px;
+    font-size: 0;
+    padding: 0 10px;
+    margin: 30px 0 0 -10px;
+    background-color: #eeeeee;
+    box-shadow: 0 1px 0 rgba(14, 14, 14, 0.3);
+}
+
+.finder input[name="path"] {
+    width: calc(100% - 324px);
+    margin-left: 10px;
+}
+
+.finder input[name="search"] {
+    width: 180px;
+    margin: 0 10px;
+}
+
+.finder aside {
+    position: absolute;
+    top: 31px;
+    left: 0;
+    bottom: 0;
+    width: 200px;
+    background-color: #eeeeee;
+    border-right: 1px solid #d2d0d5;
+    border-bottom-left-radius: 3px;
+}
+
+.finder aside section {
+    padding: 15px;
+}
+
+.finder aside section h1 {
+    font-size: 1.2rem;
+    line-height: 1;
+    text-transform: uppercase;
+    color: #888888;
+    margin-bottom: 8px;
+}
+
+.finder aside section li {
+    width: calc(100% + 30px);
+    margin-left: -15px;
+    list-style: none;
+    font-size: 1.2rem;
+    line-height: 1;
+    color: #333333;
+    cursor: pointer;
+    padding: 4px 15px 2px 15px;
+}
+
+.finder aside section li:hover {
+    color: #ffffff;
+    background-color: #4f8edb;
+}
+
+.finder main {
+    top: 30px;
+    left: auto;
+    width: calc(100% - 200px);
+}
+
+.finder main p {
+    font-size: 1.2rem;
+    text-align: center;
+    color: #777777;
+    margin-top: 15px;
+}
+
+.terminal {
+    top: calc(100% - 400px);
+    left: calc(100% - 600px);
+    width: 500px;
+    height: 300px;
+    background-color: #222222;
+}
+
+.terminal main {
+    margin: 7px;
+}
+
+.terminal .contents.overflow {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.terminal p {
+    font-size: 1.2rem;
+    line-height: 1;
+    color: #ffffff;
+    word-break: break-all;
+}
+
+.terminal p.green {
+    color: #16cf36;
+}
+
+.terminal p.yellow {
+    color: #fec107;
+}
+
+.terminal p.red {
+    color: #ff5f50;
+}
+
+.terminal .prompt {
+    position: relative;
+}
+
+.terminal main span {
+    position: absolute;
+    font-size: 1.2rem;
+    line-height: 1;
+    color: #ffffff;
+}
+
+.terminal main span:after {
+    content: " $";
+}
+
+.terminal textarea {
+    display: block;
+    width: 100%;
+    height: 12px;
+    font: normal 1.2rem/1 "Consolas", monospace;
+    text-indent: 26.5px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    word-break: break-all;
+    color: #ffffff;
+    background: none;
+    border: none;
+    outline: none;
+    resize: none;
+}
+
+.terminal textarea[data-capture-enter="false"] {
+    text-indent: 0 !important;
+}
+
+.textedit {
+    top: calc(100% - 350px);
+    left: 250px;
+    width: 400px;
+    height: 300px;
+}
+
+.textedit main {
+    padding: 5px;
+}
+
+.textedit textarea {
+    display: block;
+    width: 100%;
+    height: 100%;
+    font: normal 1.2rem/1 "Consolas", monospace;
+    color: #222222;
+    border: none;
+    outline: none;
+    resize: none;
+}
+
+.overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 3;
+}
+
+.alert {
+    width: 300px;
+    height: auto;
+    z-index: 4;
+}
+
+.alert:before {
+    content: "";
+    position: absolute;
+    top: 40px;
+    left: 10px;
+    width: 50px;
+    height: 50px;
+    background-image: url("http://cdn.arnellebalane.com/images/virtual-filesystem/info.png");
+    opacity: 0.25;
+}
+
+.alert main {
+    position: static;
+    display: block;
+    padding: 20px 0 20px 70px;
+}
+
+.alert h4 {
+    font-size: 1.3rem;
+    text-transform: uppercase;
+    color: #333333;
+    margin-bottom: 3px;
+}
+
+.alert p {
+    font-size: 1.2rem;
+    color: #222222;
+}
+
+.filebrowser {
+    width: 350px;
+    height: 250px;
+    z-index: 3;
+}
+
+.filebrowser ul {
+    height: calc(100% - 32px);
+    padding: 10px 0;
+    overflow: auto;
+}
+
+.filebrowser .file-info {
+    padding: 5px 10px;
+    background-color: #eeeeee;
+    border-bottom-left-radius: 3px;
+    border-bottom-right-radius: 3px;
+    box-shadow: 0 -1px 0 rgba(14, 14, 14, 0.3);
+}
+
+.filebrowser label {
+    float: left;
+    font-size: 1.2rem;
+    line-height: 2.2rem;
+    color: #333333;
+    margin-right: 5px;
+}
+
+.filebrowser input {
+    float: left;
+    width: 236px;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    margin-right: 1px;
+}
+
+.filebrowser .action-button {
+    float: left;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+
+
+/** COMPONENTS STYLES **/
+.icon {
+    display: inline-block;
+    vertical-align: top;
+    width: 75px;
+    height: auto;
+    font-size: 1.2rem;
+    text-align: center;
+    line-height: 1;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: #222222;
+    background: none;
+    border-radius: 3px;
+    margin: 5px;
+    padding: 5px;
+    cursor: pointer;
+}
+
+.icon:before {
+    content: "";
+    display: block;
+    width: 80%;
+    padding: 40% 0;
+    margin: 0 auto 5px auto;
+    background: center center no-repeat;
+    background-size: cover;
+    -webkit-box-sizing: content-box;
+    -moz-box-sizing: content-box;
+    box-sizing: content-box;
+}
+
+.icon.list {
+    display: block;
+    width: 100%;
+    text-align: left;
+    margin: 1px 0;
+    border-radius: 0;
+    padding: 4px 10px 2px 30px;
+    position: relative;
+}
+
+.icon.list:nth-of-type(2n) {
+    background-color: #eeeeee;
+}
+
+.icon.list:before {
+    position: absolute;
+    top: 2px;
+    left: 10px;
+    width: 14px;
+    height: 14px;
+    padding: 0;
+    background-image: url("http://cdn.arnellebalane.com/images/virtual-filesystem/folder.png");
+    opacity: 0.5;
+}
+
+.icon.highlighted {
+    color: #ffffff !important;
+    background-color: rgba(119, 170, 219, 1) !important;
+}
+
+.icon.launchpad:before {
+    background-image: url("http://cdn.arnellebalane.com/images/virtual-filesystem/finder.png");
+}
+
+.icon.terminal:before {
+    background-image: url("http://cdn.arnellebalane.com/images/virtual-filesystem/terminal.png");
+}
+
+.icon.textedit:before {
+    background-image: url("http://cdn.arnellebalane.com/images/virtual-filesystem/textedit.png");
+}
+
+.icon.documents:before {
+    background-image: url("http://cdn.arnellebalane.com/images/virtual-filesystem/briefcase.png");
+}
+
+.icon.sublimetext:before {
+    background-image: url("http://cdn.arnellebalane.com/images/virtual-filesystem/file.png");
+}
+
+.icon textarea {
+    display: block;
+    width: 100%;
+    height: 12px;
+    font: normal 1.2rem/1 "Consolas", monospace;
+    text-align: center;
+    border: none;
+    border-radius: 2px;
+    padding: none;
+    resize: none;
+    outline: none;
+}
+
+.action-button {
+    position: relative;
+    display: inline-block;
+    width: 28px;
+    height: 22px;
+    background-color: #ffffff;
+    border-radius: 3px;
+    box-shadow: 0 1px 1px rgba(40, 40, 40, 0.25);
+    cursor: pointer;
+}
+
+.action-button:before {
+    content: "";
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: transparent center center no-repeat;
+    background-size: 80% auto;
+    opacity: 0.5;
+}
+
+.action-button:active,
+.action-button.pressed {
+    top: 1px;
+    background-color: #fafafa;
+    box-shadow: 0 0 1px rgba(40, 40, 40, 0.25);
+}
+
+.action-button.disabled {
+    background-color: #f5f5f5;
+}
+
+.action-button.disabled:active {
+    top: 0;
+    box-shadow: 0 1px 1px rgba(40, 40, 40, 0.25);
+}
+
+.action-button[data-icon="back"]:before {
+    background-image: url("http://cdn.arnellebalane.com/images/virtual-filesystem/back.png");
+}
+
+.action-button[data-icon="forward"]:before {
+    background-image: url("http://cdn.arnellebalane.com/images/virtual-filesystem/forward.png");
+}
+
+.action-button[data-icon="folder"]:before {
+    background-image: url("http://cdn.arnellebalane.com/images/virtual-filesystem/folder.png");
+    background-size: 60% auto;
+}
+
+.action-button[data-icon="file"]:before {
+    background-image: url("http://cdn.arnellebalane.com/images/virtual-filesystem/file-black.png");
+    background-size: 60% auto;
+}
+
+.action-button[data-icon="check"]:before {
+    background-image: url("http://cdn.arnellebalane.com/images/virtual-filesystem/check.png");
+    background-size: 60% auto;
+}
+
+.button-group {
+    display: inline-block;
+    font-size: 0;
+}
+
+.button-group .action-button {
+    margin-right: 1px;
+    border-radius: 0;
+}
+
+.button-group .action-button:first-child {
+    border-top-left-radius: 3px;
+    border-bottom-left-radius: 3px;
+}
+
+.button-group .action-button:last-child {
+    margin-right: 0;
+    border-top-right-radius: 3px;
+    border-bottom-right-radius: 3px;
+}
+
+.contextmenu {
+    position: absolute;
+    z-index: 2;
+    width: 100px;
+    list-style: none;
+    background-color: #ffffff;
+    font-size: 1.2rem;
+    color: #222222;
+    border-radius: 2px;
+    cursor: pointer;
+    overflow: hidden;
+    box-shadow: 0 4px 15px 3px rgba(50, 50, 50, 0.5);
+}
+
+.contextmenu li {
+    padding: 5px 10px;
+}
+
+.contextmenu li:hover {
+    color: #ffffff;
+    background-color: #4f8edb;
+}
+
+</style>
+<script>
+    (function(root, library) {
+    if (typeof define === 'function' && define.amd) {
+        define('generic-tree', [], library);
+    } else {
+        root.GenericTree = library();
+    }
+})(this, function() {
+    function GenericTree() {
+        this.root = null;
+
+        this.insert = function(key, parent, properties) {
+            if (key === undefined) {
+                throw new Error('Missing argument: key');
+            }
+            parent = parent instanceof Node ? [parent] : this.search(parent);
+            var node = new Node(key, properties);
+            if (parent === null && !this.root) {
+                this.root = node;
+            } else if (parent === null && !!this.root) {
+                throw new Error('GenericTree already has a root. Please specify the node\'s parent.');
+            } else if (!parent.length) {
+                throw new Error('Parent node not found.');
+            } else {
+                parent[0].insert(node);
+            }
+            return node;
+        };
+
+        this.delete = function(node) {
+            if (node === undefined) {
+                throw new Error('Missing argument: key');
+            }
+            var targets = node instanceof Node ? [node] : this.search(node);
+            if (targets === null || !targets.length) {
+                throw new Error('Target node not found.');
+            }
+            for (var i = 0; i < targets.length; i++) {
+                var target = targets[i];
+                if (target === this.root) {
+                    this.root = null;
+                } else {
+                    target.parent.delete(target);
+                }
+            }
+        };
+
+        this.search = function(key) {
+            return key !== undefined && this.root ? this.root.search(key) : null;
+        };
+
+        this.traverse = function() {
+            if (this.root !== null) {
+                var queue = [this.root];
+                var levels = [];
+                var level = [];
+                for (var i = 1, j = 0; queue.length;) {
+                    var pointer = queue.shift();
+                    level.push(pointer);
+                    j += pointer.children.length;
+                    if (!--i) {
+                        i = j;
+                        j = 0;
+                        levels.push(level);
+                        level = [];
+                    }
+                    queue = queue.concat(pointer.children);
+                }
+                return levels;
+            }
+            return [];
+        };
+    }
+
+    function Node(key, properties) {
+        this.key = key;
+        this.parent = null;
+        this.children = [];
+
+        properties = properties && typeof properties === 'object' ? properties : {};
+        for (var i in properties) {
+            this[i] = properties[i];
+        }
+
+        this.insert = function(child) {
+            this.children.push(child);
+            child.parent = this;
+        };
+
+        this.delete = function(child) {
+            this.children.splice(this.children.indexOf(child), 1);
+        };
+
+        this.search = function(key) {
+            var results = this.key.match('^' + key.replace(/\./g, '\\.').replace(/\*/g, '\.\*') + '$') ? [this] : [];
+            for (var i in this.children) {
+                results = results.concat(this.children[i].search(key));
+            }
+            return results;
+        };
+
+        this.find = function(key) {
+            var results = [];
+            for (var i in this.children) {
+                if (this.children[i].key.match('^' + key.replace(/\./g, '\\.').replace(/\*/g, '\.\*') + '$')) {
+                    results.push(this.children[i]);
+                }
+            }
+            return results;
+        };
+    }
+
+    return GenericTree;
+});
+
+(function(root, library) {
+    if (typeof define === 'function' && define.amd) {
+        define('virtual-filesystem', ['generic-tree'], library);
+    } else {
+        root.VirtualFileSystem = library(root.GenericTree);
+    }
+})(this, function(GenericTree) {
+    function VirtualFileSystem() {
+        this.tree = new GenericTree();
+        this.tree.insert('', null, { type: 'directory' });
+        this.pointer = this.tree.root;
+
+        this.mkdir = function(path) {
+            if (path === undefined) {
+                throw new Error('Missing argument: path');
+            }
+            var segments = path.replace(/\/+$/g, '').split('/');
+            var parent = this._resolve_path(segments.slice(0, segments.length - 1).join('/'));
+            var name = segments[segments.length - 1];
+            if (parent.find(name).length) {
+                throw new Error('Name already taken: ' + name);
+            }
+            this.tree.insert(name, parent, { type: 'directory' });
+        };
+
+        this.rmdir = function(path) {
+            if (path === undefined) {
+                throw new Error('Missing argument: path');
+            }
+            var node = this._resolve_path(path.replace(/\/+$/g, ''));
+            if (node === this.tree.root) {
+                throw new Error('You cannot delete the root directory.');
+            } else if (node.type !== 'directory') {
+                throw new Error('Not a directory: ' + node.key);
+            }
+            this.tree.delete(node);
+            var current_path = this._absolute_path(this.pointer);
+            var node_path = this._absolute_path(node);
+            if (node_path.match('^' + current_path) && current_path.length) {
+                this.pointer = node.parent;
+            }
+        };
+
+        this.cd = function(path) {
+            if (path === undefined) {
+                throw new Error('Missing argument: path');
+            }
+            this.pointer = this._resolve_path(path);
+            return this.pointer;
+        };
+
+        this.cat = function(mode, path, contents) {
+            if (path === undefined) {
+                throw new Error('Missing argument: path');
+            }
+            var segments = path.replace(/\/+$/g, '').split('/');
+            var parent = this._resolve_path(segments.slice(0, segments.length - 1).join('/'));
+            var name = segments[segments.length - 1];
+            var node = parent.find(name)[0];
+            if (node && node.type !== 'file') {
+                throw new Error('Not a file: ' + path);
+            } else if (mode.length) {
+                if (node === undefined) {
+                    node = this.tree.insert(name, parent, { type: 'file', contents: '' });
+                }
+                node.contents = mode === '>' ? contents : node.contents + contents;
+            } else {
+                if (node === undefined) {
+                    throw new Error('File not found: ' + path);
+                }
+                return node.contents;
+            }
+        };
+
+        this.rm = function(path) {
+            if (path === undefined) {
+                throw new Error('Missing argument: path');
+            }
+            var node = this._resolve_path(path.replace(/\/+$/g, ''));
+            if (node.type !== 'file') {
+                throw new Error('Not a file: ' + node.key);
+            }
+            this.tree.delete(node);
+        };
+
+        this.rn = function(path, name) {
+            if (path === undefined) {
+                throw new Error('Missing argument: path');
+            } else if (name === undefined) {
+                throw new Error('Missing argument: name');
+            }
+            var node = this._resolve_path(path);
+            if (node === this.tree.root) {
+                throw new Error('You cannot rename the root directory.');
+            }
+            var search = node.parent.find(name)[0];
+            if (search && search.type === node.type) {
+                throw new Error('Rename failed. Name already taken.');
+            }
+            node.key = name;
+        };
+
+        this.cp = function(target, destination) {
+            if (target === undefined) {
+                throw new Error('Missing argument: target');
+            } else if (destination === undefined) {
+                throw new Error('Missing argument: destination');
+            }
+            target = typeof target === 'object' ? target : this._resolve_path(target);
+            destination = typeof destination === 'object' ? destination : this._resolve_path(destination);
+            var properties = { type: target.type };
+            if (properties.type === 'file') {
+                properties.contents = target.contents;
+            }
+            var node = this.tree.insert(target.key, destination, properties);
+            for (var i = 0; i < target.children.length; i++) {
+                this.cp(target.children[i], node);
+            }
+            return node;
+        };
+
+        this.mv = function(target, destination) {
+            if (target === undefined) {
+                throw new Error('Missing argument: target');
+            } else if (destination === undefined) {
+                throw new Error('Missing argument: destination');
+            }
+            target = typeof target === 'object' ? target : this._resolve_path(target);
+            destination = typeof destination === 'object' ? destination : this._resolve_path(destination);
+            this.tree.delete(target);
+            return this.cp.call(this, target, destination);
+        };
+
+        this.ls = function(path) {
+            var node = path === undefined ? this.pointer : this._resolve_path(path);
+            if (node.type === 'directory') {
+                return node.children;
+            }
+            throw new Error('Not a directory: ' + path);
+        };
+
+        this.whereis = function(query) {
+            if (query === undefined) {
+                throw new Error('Missing argument: query');
+            }
+            return this.tree.search(query);
+        };
+
+        this._resolve_path = function(path) {
+            path = path.match('^\/') ? path : './' + path;
+            path = path.split('/');
+            var parent = path[0].length ? this.pointer : this.tree.root;
+            for (var i = !path[0].length ? 1 : 0; i < path.length; i++) {
+                if (path[i] === '..') {
+                    if (parent === this.tree.root) {
+                        throw new Error('No more directories beyond root directory.');
+                    }
+                    parent = parent.parent;
+                } else if (path[i] !== '.' && path[i].length) {
+                    parent = parent.find(path[i])[0];
+                    if (parent === undefined) {
+                        throw new Error('Path not found: ' + path.slice(0, i + 1).join('/'));
+                    }
+                }
+            }
+            return parent;
+        };
+
+        this._absolute_path = function(node) {
+            var path = [];
+            while (node !== null) {
+                path.unshift(node.key);
+                node = node.parent;
+            }
+            return path.join('/');
+        };
+    }
+
+    return VirtualFileSystem;
+});
+
+$(document).ready(function() {
+    filesystem.initialize();
+    components.initialize();
+    windows.initialize();
+    system.initialize();
+});
+
+var filesystem = {
+    instance: new VirtualFileSystem(),
+    initialize: function() {
+        filesystem.instance.mkdir('Documents');
+        filesystem.instance.mkdir('Pictures');
+        filesystem.instance.mkdir('Music');
+        filesystem.instance.mkdir('Videos');
+        filesystem.instance.mkdir('Documents/Academics');
+        filesystem.instance.mkdir('Documents/Projects');
+        filesystem.instance.mkdir('Documents/Work');
+        filesystem.instance.mkdir('Documents/Codes');
+        filesystem.instance.mkdir('Documents/Academics/cmsc142');
+        filesystem.instance.mkdir('Documents/Academics/cmsc141');
+        filesystem.instance.mkdir('Documents/Academics/sts40');
+        filesystem.instance.mkdir('Documents/Academics/cmsc198.1');
+        filesystem.instance.mkdir('Documents/Codes/Javascript');
+        filesystem.instance.mkdir('Documents/Codes/Python');
+        filesystem.instance.mkdir('Documents/Codes/Ruby');
+
+        filesystem.instance.cat('>', 'Documents/Academics/cmsc142/mp1.c', 'hello world');
+        filesystem.instance.cat('>', 'Documents/Academics/cmsc142/mp2.c', 'hello world again');
+        filesystem.instance.cat('>', 'Documents/Codes/Javascript/sample.js', 'this is a sample javascript file');
+        filesystem.instance.cat('>', 'Documents/Codes/Javascript/script.js', 'this is another sample javascript file');
+        filesystem.instance.cat('>', 'Documents/Codes/Python/sample.py', 'this is a sample python file');
+        filesystem.instance.cat('>', 'Documents/Codes/Ruby/sample.rb', 'this is a sample ruby file');
+
+        Window.favorites = ['/Documents', '/Pictures', '/Music', 'Videos'];
+    },
+    resolve_path: function(path) {
+        return path === undefined ? filesystem.instance.tree.root : filesystem.instance._resolve_path(path);
+    },
+    absolute_path: function(path) {
+        return this.instance._absolute_path(path);
+    }
+};
+
+var components = {
+    initialize: function() {
+        components.icons();
+        components.textareas();
+        components.huds();
+    },
+    icons: function() {
+        windows.desktop.on('mousedown', '.icon', function(e) {
+            if (e.ctrlKey) {
+                $(this).toggleClass('highlighted');
+            } else {
+                $('.icon').removeClass('highlighted');
+                $(this).addClass('highlighted');
+            }
+            var target = $(this).closest('.window');
+            if (target.length) {
+                windows.focus(windows.instance(target));
+            }
+        });
+
+        windows.desktop.on('dblclick', '.icon[data-application]', function(e) {
+            $(this).removeClass('highlighted');
+            windows.spawn($(this).data('application'));
+        });
+
+        windows.desktop.on('dblclick', '.window .icon', function(e) {
+            $(this).removeClass('highlighted');
+            var target = windows.instance($(this).closest('.window'));
+            target.icons_handler(e);
+        });
+
+        windows.desktop.on('mousedown', function(e) {
+            if (!$(e.target).hasClass('icon')) {
+                $('.icon').removeClass('highlighted');
+            }
+            if (!$(e.target).closest('.contextmenu').length) {
+                $('.contextmenu').addClass('hidden');
+            }
+        });
+    },
+    textareas: function() {
+        windows.desktop.on('keydown', 'textarea', function(e) {
+            var target = windows.instance($(this).closest('.window'));
+            if (e.keyCode === 9) {
+                e.preventDefault();
+            } else if (e.keyCode === 13 && $(this).attr('data-capture-enter') === 'true') {
+                e.preventDefault();
+                target.textarea_handler(e);
+            } else if (e.ctrlKey && (e.keyCode === 76 || e.keyCode === 68 || e.keyCode === 83)) {
+                e.preventDefault();
+                target.keyboard_handler(e);
+            } else if (e.keyCode === 27) {
+                target.keyboard_handler(e);
+            } else if ($(this).hasClass('autosize')) {
+                target.textarea_handler(e);
+            }
+        });
+
+        windows.desktop.on('blur', '.window .icon textarea', function(e) {
+            var target = windows.instance($(this).closest('.window'));
+            target.textarea_handler(e);
+        });
+    },
+    huds: function() {
+        windows.desktop.on('mousedown', '.window .action-button', function(e) {
+            $('.icon').removeClass('highlighted');
+            var target = windows.instance($(this).closest('.window'));
+            target.huds_handler(e);
+        });
+
+        windows.desktop.on('focus', '.window input', function(e) {
+            $(this).attr('data-value', $(this).val());
+        });
+
+        windows.desktop.on('keydown', '.window input', function(e) {
+            $(this).removeClass('error');
+            if (e.keyCode === 27) {
+                $(this).val($(this).data('value')).trigger('blur');
+            } else if (e.keyCode === 13) {
+                $(this).trigger('blur');
+                var target = windows.instance($(this).closest('.window'));
+                target.huds_handler(e);
+            }
+        });
+
+        windows.desktop.on('mousedown', function(e) {
+            $('.window input').removeClass('error');
+        });
+    }
+};
+
+var windows = {
+    desktop: $('#desktop'),
+    instances: {},
+    initialize: function() {
+        windows.focus();
+        windows.draggable();
+        windows.actions();
+
+        // transfer this later
+        windows.desktop.on('click', '.favorites li', function(e) {
+            var target = windows.instance($(this).closest('.window'));
+            var node = filesystem.resolve_path($(this).data('path'));
+            target.location(node);
+        });
+    },
+    spawn: function(application, path) {
+        application = applications[application](path);
+        var key = $('.window').length;
+        windows.instances[key] = application;
+        application.dom.attr('data-instance', key);
+        windows.desktop.append(application.dom);
+        windows.focus(application);
+        return application;
+    },
+    focus: function(target) {
+        if (target === undefined) {
+            windows.desktop.on('mousedown', '.window', function(e) {
+                windows.focus(windows.instance($(this)));
+            });
+        } else {
+            if (!target.dom.hasClass('focused')) {
+                $('.window').removeClass('focused');
+                target.dom.addClass('focused');
+                windows.desktop.append(target.dom);
+                if (target.hasOwnProperty('pointer')) {
+                    filesystem.instance.pointer = target.pointer;
+                }
+                setTimeout(function() {
+                    target.focus();
+                }, 0);
+            }
+        }
+    },
+    draggable: function() {
+        var target = null;
+        var start = { x: 0, y: 0 };
+        var origin = { x: 0, y: 0 };
+
+        windows.desktop.on('mousedown', '.window header', function(e) {
+            target = $(this).closest('.window');
+            start = { x: e.pageX, y: e.pageY };
+            origin = { x: target.offset().left, y: target.offset().top };
+        });
+
+        windows.desktop.on('mousemove', function(e) {
+            if (target !== null) {
+                target.css({
+                    top: origin.y + (e.pageY - start.y) + 'px',
+                    left: origin.x + (e.pageX - start.x) + 'px'
+                });
+            }
+        });
+
+        windows.desktop.on('mouseup', function() {
+            target = null;
+            start = { x: 0, y: 0 };
+            origin = { x: 0, y: 0 };
+        });
+
+        windows.desktop.on('mousedown', '.window header .action-bar > *', function(e) {
+            e.stopPropagation();
+        });
+    },
+    close: function(target) {
+        target.dom.remove();
+        var last = windows.desktop.find('.window').last();
+        if (last.length) {
+            windows.focus(windows.instance(last));
+        }
+        $('.overlay').remove();
+    },
+    actions: function() {
+        windows.desktop.on('mousedown', '.window .action', function(e) {
+            e.stopPropagation();
+            var target = windows.instance($(this).closest('.window'));
+            windows.focus(target);
+            if ($(this).hasClass('close')) {
+                windows.close(target);
+            } else if ($(this).hasClass('minimize')) {
+                target.minimize();
+            } else if ($(this).hasClass('maximize')) {
+                target.maximize();
+            }
+        });
+    },
+    instance: function(target) {
+        return windows.instances[target.data('instance')];
+    }
+};
+
+var system = {
+    clipboard: [],
+    clipboard_sources: [],
+    clipboard_operation: null,
+    clipboard_operations: { 67: 'cp', 88: 'mv' },
+    contextmenu: $('.contextmenu'),
+    contextmenu_target: null,
+    initialize: function() {
+        $(document).on('keyup', function(e) {
+            if (e.keyCode === 67 || e.keyCode === 88 || e.keyCode === 86) {
+                system.invoke_clipboard(e.keyCode);
+            } else if (e.keyCode === 46) {
+                system.invoke_deletion();
+            }
+        });
+
+        $(document).on('contextmenu', function(e) {
+            e.preventDefault();
+            system.invoke_contextmenu(e);
+        });
+
+        $('.contextmenu .rename').on('click', function(e) {
+            var target = windows.instance(system.contextmenu_target.closest('.window'));
+            target.icons_handler(e);
+        });
+    },
+    invoke_clipboard: function(code) {
+        if (code === 67 || code === 88) {
+            system.clipboard = [];
+            system.clipboard_operation = system.clipboard_operations[code];
+            $('.window .icon.highlighted').each(function() {
+                system.clipboard.push($(this).data('path'));
+                var parent = windows.instance($(this).closest('.window'));
+                if (system.clipboard_sources.indexOf(parent) < 0) {
+                    system.clipboard_sources.push(parent);
+                }
+            });
+        } else {
+            var target = windows.instance($('.window.focused'));
+            if (target && target instanceof Finder) {
+                for (var i = 0; i < system.clipboard.length; i++) {
+                    filesystem.instance[system.clipboard_operation](system.clipboard[i], target.pointer);
+                }
+                target.refresh();
+                for (var i = 0; i < system.clipboard_sources.length; i++) {
+                    system.clipboard_sources[i].refresh();
+                }
+                system.clipboard = [];
+                system.clipboard_sources = [];
+            }
+        }
+    },
+    invoke_deletion: function() {
+        $('.window .icon.highlighted').each(function() {
+            var target = windows.instance($(this).closest('.window'));
+            if ($(this).hasClass('documents')) {
+                filesystem.instance.rmdir($(this).data('path'));
+            } else if ($(this).hasClass('sublimetext')) {
+                filesystem.instance.rm($(this).data('path'));
+            }
+            $(this).remove();
+            target.refresh();
+        });
+    },
+    invoke_contextmenu: function(e) {
+        var target = $(e.target);
+        if (target.closest('.finder').length) {
+            // @todo clean this up later
+            system.contextmenu_target = $('.icon.highlighted');
+            if (system.contextmenu_target.length) {
+                system.contextmenu.css({ 'top': e.pageY + 'px', 'left': e.pageX + 'px' }).removeClass('hidden');
+            }
+        }
+    }
+};
+
+var applications = {
+    finder: function(path) {
+        return new Finder(filesystem.resolve_path(path));
+    },
+    terminal: function(path) {
+        return new Terminal(filesystem.resolve_path(path));
+    },
+    textedit: function(path) {
+        return new TextEdit(path ? filesystem.resolve_path(path) : path);
+    },
+    filebrowser: function(path) {
+        return new FileBrowser(filesystem.resolve_path(path));
+    }
+};
+
+var templates = {
+    finder: $('template#finder').html(),
+    terminal: $('template#terminal').html(),
+    textedit: $('template#textedit').html(),
+    filebrowser: $('template#filebrowser').html(),
+    alert: $('template#alert').html()
+};
+
+// UTILITY METHODS
+var util = {
+    autosize: function(target) {
+        target.css('height', 'auto');
+        target.css('height', target[0].scrollHeight + 'px');
+    },
+    alert: function(message) {
+        $('.window').removeClass('focused');
+        var template = $(templates.alert);
+        var overlay = $('<div class="overlay"></div>');
+        template.find('p').text(message);
+        windows.desktop.append(overlay);
+        windows.desktop.append(template);
+        template.css({
+            'top': (window.innerHeight - 3 * template.height()) / 2 + 'px',
+            'left': (window.innerWidth - template.width()) / 2 + 'px'
+        });
+
+        template.find('.action').on('mousedown', function(e) {
+            e.stopPropagation();
+            overlay.remove();
+            template.remove();
+            windows.desktop.find('.window').last().addClass('focused');
+        });
+    }
+};
+
+// WINDOW CLASSES
+function Class() {}
+
+Class.extend = function(child) {
+    var instance = new this();
+    for (var property in instance) {
+        if (!child.prototype.hasOwnProperty(property)) {
+            child.prototype[property] = instance[property];
+        }
+    }
+    for (var property in this) {
+        if (!child.hasOwnProperty(property)) {
+            child[property] = this[property];
+        }
+    }
+};
+
+function Window() {}
+Class.extend(Window);
+
+Window.prototype.focus = function() {};
+Window.prototype.keyboard_handler = function() {};
+Window.prototype.textarea_handler = function() {};
+Window.prototype.icons_handler = function() {};
+Window.prototype.huds_handler = function() {};
+
+Window.prototype.minimize = function(callback) {
+    if (this.dom.hasClass('maximized')) {
+        this.dom.animate({
+            top: this.dom.offset().top + (this.max_height - this.min_height) / 2 + 'px',
+            left: this.dom.offset().left + (this.max_width - this.min_width) / 2 + 'px',
+            width: this.min_width + 'px',
+            height: this.min_height + 'px'
+        }, 150, callback).removeClass('maximized');
+    }
+};
+
+Window.prototype.maximize = function(callback) {
+    if (!this.dom.hasClass('maximize')) {
+        this.dom.animate({
+            top: this.dom.offset().top - (this.max_height - this.min_height) / 2 + 'px',
+            left: this.dom.offset().left - (this.max_width - this.min_width) / 2 + 'px',
+            width: this.max_width + 'px',
+            height: this.max_height + 'px'
+        }, 150, callback).addClass('maximized');
+    }
+};
+
+function Finder(pointer) {
+    this.min_width = 700;
+    this.min_height = 400;
+    this.max_width = window.innerWidth - 100;
+    this.max_height = window.innerHeight - 100;
+    this.history = [];
+    this.cursor = -1;
+    this.dom = $(templates.finder);
+    this.address_bar = this.dom.find('input[name="path"]');
+    this.search_bar = this.dom.find('input[name="search"]');
+    this.pointer = null;
+    var self = this;
+
+    this.location(pointer);
+}
+Window.extend(Finder);
+
+Window.favorites = [];
+
+Finder.prototype.maximize = function() {
+    if (!this.dom.hasClass('maximize')) {
+        this.dom.animate({
+            top: 50 + 'px',
+            left: 50 + 'px',
+            width: this.max_width + 'px',
+            height: this.max_height + 'px'
+        }, 150).addClass('maximized');
+    }
+};
+
+Finder.prototype.location = function(location) {
+    this.pointer = location;
+    this.history = this.history.slice(0, Math.max(this.cursor, -1) + 1);
+    var last = this.history[this.history.length - 1];
+    if (this.pointer !== last) {
+        this.history.push(this.pointer);
+        this.cursor++;
+    }
+    this.refresh();
+};
+
+Finder.prototype.navigate = function(direction) {
+    if (direction === 'back') {
+        this.pointer = this.history[--this.cursor];
+    } else if (direction === 'forward') {
+        this.pointer = this.history[++this.cursor];
+    }
+    this.refresh();
+};
+
+Finder.prototype.refresh = function() {
+    this.dom.attr('data-title', 'Finder - ' + (this.pointer.key ? this.pointer.key : '/'));
+    var path = filesystem.absolute_path(this.pointer);
+    this.address_bar.val(path ? path : '/');
+    this.dom.find('main').empty();
+    this.dom.find('.favorites').empty();
+    // @todo clean this up later
+    this.pointer.children.sort(function(a, b) {
+        if (a.type === 'directory' && b.type === 'file') {
+            return -1;
+        } else if (a.type === 'file' && b.type === 'directory') {
+            return 1;
+        }
+        if (a.key < b.key) {
+            return -1;
+        } else if (a.key > b.key) {
+            return 1;
+        }
+        return 0;
+    });
+    for (var i = 0; i < this.pointer.children.length; i++) {
+        this.insert(this.pointer.children[i]);
+    }
+    for (var i = 0; i < Window.favorites.length; i++) {
+        // @todo clean this up later
+        try {
+            var favorite = filesystem.resolve_path(Window.favorites[i]);
+            this.dom.find('.favorites').append('<li data-path="' + Window.favorites[i] + '">' + favorite.key + '</li>');
+        } catch (e) {}
+    }
+    this.dom.find('.action-button.folder, .action-button.file').removeClass('disabled');
+    if (this.cursor === 0) {
+        this.dom.find('.action-button.back').addClass('disabled');
+    } else {
+        this.dom.find('.action-button.back').removeClass('disabled');
+    }
+    if (this.cursor === this.history.length - 1) {
+        this.dom.find('.action-button.forward').addClass('disabled');
+    } else {
+        this.dom.find('.action-button.forward').removeClass('disabled');
+    }
+};
+
+Finder.prototype.insert = function(node) {
+    var element = $('<div class="icon" data-path="' + filesystem.absolute_path(node) + '">' + node.key + '</div>');
+    if (node.type === 'directory') {
+        element.addClass('documents');
+    } else if (node.type === 'file') {
+        element.addClass('sublimetext');
+    }
+    this.dom.find('main').append(element);
+};
+
+Finder.prototype.create = function(type) {
+    var node = $('<div class="icon highlighted"><textarea name="node" class="autosize" data-new="true"></textarea></div>');
+    node.attr('data-capture-enter', 'true');
+    if (type === 'directory') {
+        node.addClass('documents');
+    } else if (type === 'file') {
+        node.addClass('sublimetext');
+    }
+    this.dom.find('main').append(node);
+    setTimeout(function() {
+        node.find('textarea').trigger('focus');
+    }, 0);
+};
+
+Finder.prototype.keyboard_handler = function(e) {
+    var target = $(e.target);
+    if (e.keyCode === 27) {
+        target.trigger('blur');
+    }
+};
+
+Finder.prototype.textarea_handler = function(e) {
+    var target = $(e.target);
+    if (e.type === 'keydown' && target.hasClass('autosize')) {
+        if (e.keyCode === 13) {
+            this.dom.find('textarea').trigger('blur');
+        } else {
+            var self = this;
+            setTimeout(function() {
+                util.autosize(self.dom.find('textarea'));
+            }, 0);
+        }
+    } else if (e.type === 'blur' || e.type === 'focusout') {
+        var path = filesystem.absolute_path(this.pointer);
+        if (!target.val().length) {
+            target.parent().remove();
+        } else if (target.attr('data-new') === 'true') {
+            if (target.parent().hasClass('documents')) {
+                try {
+                    filesystem.instance.mkdir(path + '/' + target.val());
+                } catch (e) {
+                    target.parent().remove();
+                    util.alert(e.message);
+                }
+            } else if (target.parent().hasClass('sublimetext')) {
+                if (this.pointer.find(target.val()).length) {
+                    target.parent().remove();
+                    util.alert('Name already taken: ' + target.val());
+                } else {
+                    filesystem.instance.cat('>', path + '/' + target.val(), '');
+                }
+            }
+        } else {
+            try {
+                filesystem.instance.rn(target.attr('data-new'), target.val());
+            } catch (e) {
+                util.alert(e.message);
+            }
+        }
+        this.refresh();
+    }
+};
+
+Finder.prototype.icons_handler = function(e) {
+    var target = $(e.target);
+    if (target.hasClass('documents')) {
+        this.location(filesystem.resolve_path(target.data('path')));
+    } else if (target.hasClass('sublimetext')) {
+        var editor = windows.spawn('textedit', target.data('path'));
+        editor.dom.attr('data-path', filesystem.absolute_path(editor.pointer));
+    } else if (e.type === 'click') {
+        system.contextmenu.addClass('hidden');
+        var target = system.contextmenu_target;
+        var node = filesystem.resolve_path(target.data('path'));
+        target.html('<textarea name="node" class="autosize" data-new="' + filesystem.absolute_path(node) + '">' + node.key + '</textarea>');
+        target.addClass('highlighted').find('textarea').trigger('focus');
+    }
+};
+
+Finder.prototype.huds_handler = function(e) {
+    var target = $(e.target);
+    if (target.hasClass('back') && !target.hasClass('disabled')) {
+        this.navigate('back');
+    } else if (target.hasClass('forward') && !target.hasClass('disabled')) {
+        this.navigate('forward');
+    } else if (target.is('[name="path"]')) {
+        try {
+            var destination = filesystem.resolve_path(target.val());
+            this.location(destination);
+        } catch (e) {
+            target.addClass('error').trigger('focus');
+        }
+    } else if (target.is('[name="search"]')) {
+        var results = filesystem.instance.whereis(target.val());
+        this.dom.find('main').empty();
+        this.dom.find('.action-button.folder, .action-button.file').addClass('disabled');
+        for (var i = 0; i < results.length; i++) {
+            this.cursor++;
+            this.dom.find('.action-bar .action-button').addClass('disabled');
+            this.dom.find('.action-bar .action-button.back').removeClass('disabled');
+            var node = results[i];
+            var path = filesystem.absolute_path(node);
+            var result = $('<div class="icon" data-path="' + path + '" title="' + path + '">' + node.key + '</div>');
+            if (node.type === 'directory') {
+                result.addClass('documents');
+            } else if (node.type === 'file') {
+                result.addClass('sublimetext');
+            }
+            this.dom.find('main').append(result);
+        }
+        if (!results.length) {
+            this.dom.find('main').append('<p>No results found.</p>');
+        }
+    } else if (target.is('.action-button.folder') && !target.hasClass('disabled')) {
+        this.create('directory');
+    } else if (target.is('.action-button.file') && !target.hasClass('disabled')) {
+        this.create('file');
+    }
+};
+
+function Terminal(pointer) {
+    this.min_width = 500;
+    this.min_height = 300;
+    this.max_width = 800;
+    this.max_height = 500;
+    this.dom = $(templates.terminal);
+    this.prompt = this.dom.find('.prompt span');
+    this.input = this.dom.find('textarea');
+    this.buffer = null;
+    this.pointer = pointer;
+    var self = this;
+
+    this.intercepts = {
+        ls: function(path) {
+            var results = filesystem.instance.ls(path || filesystem.absolute_path(this.pointer));
+            var width = 0;
+            results.forEach(function(item) {
+                width = Math.max(width, item.key.length);
+            });
+            width += 5;
+            var columns = ~~(this.min_width / 7 / width);
+            var line = '';
+            for (var i = 0, j = columns; i < results.length; i++) {
+                line += results[i].key;
+                for (var k = 0; k < width - results[i].key.length; k++) {
+                    line += '\u00a0';
+                }
+                if (--j == 0) {
+                    this.log(line);
+                    line = '';
+                    j = columns;
+                }
+            }
+            this.log(line);
+        },
+        cd: function(path) {
+            this.location(filesystem.instance.cd(path));
+        },
+        cat: function(params) {
+            params = Array.prototype.slice.call(arguments);
+            if (params[0].match('^(>|>>)$') && params.length < 3) {
+                params[0] = params[0] === '>>' ? '' : params[0];
+                execute.call(this, params);
+                params[0] = '>';
+                execute.call(this, params);
+                this.buffer = 'cat ' + params.join(' ');
+                this.input.attr('data-capture-enter', 'false');
+                this.prompt.addClass('hidden');
+            } else {
+                if (!params[0].match('^(>|>>)$')) {
+                    params.unshift('');
+                }
+                execute.call(this, params);
+                this.buffer = null;
+                this.input.attr('data-capture-enter', 'true');
+                this.prompt.removeClass('hidden');
+            }
+
+            function execute(params) {
+                var output = filesystem.instance.cat.apply(filesystem.instance, params);
+                if (output !== undefined) {
+                    output = output.split(/\r?\n/g);
+                    for (var i = 0; i < output.length; i++) {
+                        this.log(output[i]);
+                    }
+                }
+            }
+        },
+        edit: function(path) {
+            this.intercepts.cat.apply(this, ['>>', path]);
+        },
+        show: function(path) {
+            this.intercepts.cat.apply(this, [path]);
+        },
+        whereis: function(query) {
+            var results = filesystem.instance.whereis(query);
+            if (results.length) {
+                for (var i = 0; i < results.length; i++) {
+                    this.log(filesystem.absolute_path(results[i]));
+                }
+            } else {
+                this.log('No results found: ' + query, 'red');
+            }
+        },
+        clear: function() {
+            this.dom.find('main p').remove();
+        },
+        exit: function() {
+            windows.close(this);
+        }
+    };
+
+    this.location(this.pointer);
+
+    // make clicks on the terminal window focus on the textarea
+    this.dom.on('click', this.focus.bind(this));
+}
+Window.extend(Terminal);
+
+Terminal.prototype.focus = function() {
+    this.dom.find('textarea').focus();
+};
+
+Terminal.prototype.minimize = function() {
+    var self = this;
+    Window.prototype.minimize.call(self, function() {
+        util.autosize(self.input);
+    });
+};
+
+Terminal.prototype.maximize = function() {
+    var self = this;
+    Window.prototype.maximize.call(self, function() {
+        util.autosize(self.input);
+    });
+};
+
+Terminal.prototype.keyboard_handler = function(e) {
+    if (e.ctrlKey) {
+        if (e.keyCode === 83) {
+            var command = this.buffer + ' "' + this.input.val() + '"';
+            this.execute(command);
+        } else if (e.keyCode === 76) {
+            this.intercepts.clear.apply(this);
+        } else if (e.keyCode === 68) {
+            this.intercepts.exit.apply(this);
+        }
+    }
+};
+
+Terminal.prototype.textarea_handler = function(e) {
+    var target = $(e.target);
+    if (e.keyCode === 13 && target.attr('data-capture-enter') === 'true') {
+        this.execute();
+    } else if (target.hasClass('autosize')) {
+        if (e === undefined) {
+            util.autosize(this.input);
+        } else {
+            setTimeout(util.autosize, 0, this.input);
+        }
+        if (this.dom.find('.contents').height() > this.dom.find('main').height()) {
+            this.dom.find('.contents').addClass('overflow');
+        } else {
+            this.dom.find('.contents').removeClass('overflow');
+        }
+    }
+};
+
+Terminal.prototype.log = function(message, color) {
+    message = $('<p class="' + color + '">' + message + '</p>');
+    this.input.parent().before(message);
+    if (this.dom.find('.contents').height() > this.dom.find('main').height()) {
+        this.dom.find('.contents').addClass('overflow');
+    } else {
+        this.dom.find('.contents').removeClass('overflow');
+    }
+};
+
+Terminal.prototype.location = function(location) {
+    var self = this;
+    self.pointer = location;
+    self.prompt.text(filesystem.absolute_path(location));
+    self.dom.attr('data-title', 'Terminal - ' +( location.key ? location.key : '/'));
+    setTimeout(function() {
+        self.input.css('text-indent', (self.prompt.width() / 7 + 1) * 7 - 0.5 + 'px');
+    }, 0);
+};
+
+Terminal.prototype.execute = function(input) {
+    input = input === undefined ? this.input.val().trim() : input;
+    if (input.length) {
+        var command = input;
+        var params = [];
+        var index = command.indexOf(' ');
+        if (index >= 0) {
+            var buffer = '';
+            var inside = false;
+            for (var i = index + 1; i < input.length; i++) {
+                var character = input.charAt(i);
+                if (character === ' ' && !inside) {
+                    params.push(buffer.replace(/(^["']|["']$)/g, ''));
+                    buffer = '';
+                    continue;
+                } else if (character === '"' || character === '\'') {
+                    inside = !inside;
+                }
+                buffer += character;
+            }
+            params.push(buffer.replace(/(^["']|["']$)/g, ''));
+            command = input.substring(0, index);
+        }
+        if (this.buffer === null) {
+            this.log(this.prompt.text() + ' $ ' + input);
+        } else {
+            var buffer = this.input.val().split(/\r?\n/g);
+            for (var i = 0; i < buffer.length; i++) {
+                this.log(buffer[i]);
+            }
+        }
+        this.input.val('');
+        try {
+            if (this.intercepts.hasOwnProperty(command)) {
+                this.intercepts[command].apply(this, params);
+            } else if (filesystem.instance.hasOwnProperty(command)) {
+                filesystem.instance[command].apply(filesystem.instance, params);
+            } else {
+                throw new Error('Command not found: ' + command);
+            }
+        } catch (e) {
+            this.log(e.message, 'red');
+        }
+    } else {
+        this.log(this.prompt.text() + ' $');
+    }
+};
+
+function TextEdit(pointer) {
+    this.min_width = 400;
+    this.min_height = 300;
+    this.max_width = 450;
+    this.max_height = 550;
+    this.dom = $(templates.textedit);
+    this.pointer = null;
+
+    if (pointer !== undefined) {
+        this.open(pointer);
+    }
+}
+Window.extend(TextEdit);
+
+TextEdit.prototype.focus = function() {
+    this.dom.find('textarea').focus();
+};
+
+TextEdit.prototype.open = function(file) {
+    file = typeof file === 'object' ? file : filesystem.resolve_path(file);
+    this.pointer = file;
+    this.dom.attr('data-title', 'TextEdit - ' + file.key);
+    this.dom.find('textarea').val(file.contents);
+};
+
+TextEdit.prototype.save = function() {
+    var path = this.dom.data('path');
+    try {
+        var node = filesystem.resolve_path(path);
+        node.contents = this.dom.find('textarea').val();
+    } catch (e) {
+        filesystem.instance.cat('>', path, this.dom.find('textarea').val());
+    }
+    this.open(path);
+};
+
+TextEdit.prototype.keyboard_handler = function(e) {
+    var target = $(e.target);
+    if (e.ctrlKey && e.keyCode === 83) {
+        e.preventDefault();
+        if (this.pointer === null) {
+            windows.desktop.append('<div class="overlay"></div>');
+            var filebrowser = windows.spawn('filebrowser');
+            filebrowser.target(this);
+        } else {
+            this.dom.attr('data-path', filesystem.absolute_path(this.pointer));
+            this.save();
+        }
+    }
+};
+
+function FileBrowser(pointer) {
+    this.dom = $(templates.filebrowser);
+    this.application = null;
+    this.pointer = null;
+
+    this.location(pointer);
+}
+Window.extend(FileBrowser);
+
+FileBrowser.prototype.focus = function(e) {
+    this.dom.find('input').trigger('focus');
+};
+
+FileBrowser.prototype.location = function(location) {
+    this.pointer = location;
+    var list = this.dom.find('ul').empty();
+    if (this.pointer.parent !== null) {
+        var path = filesystem.absolute_path(this.pointer.parent);
+        list.append('<div class="icon list" data-path="' + (path.length ? path : '/') + '">(up one directory)</div>');
+    }
+    for (var i = 0; i < this.pointer.children.length; i++) {
+        var child = this.pointer.children[i];
+        if (child.type === 'directory') {
+            list.append('<div class="icon list" data-path="' + filesystem.absolute_path(child) + '">' + child.key + '</div>');
+        }
+    }
+};
+
+FileBrowser.prototype.target = function(application) {
+    this.application = application;
+    this.dom.css({
+        'top': this.application.dom.offset().top + (this.application.dom.height() - this.dom.height()) / 2 + 'px',
+        'left': this.application.dom.offset().left + (this.application.dom.width() - this.dom.width()) / 2 + 'px'
+    });
+};
+
+FileBrowser.prototype.icons_handler = function(e) {
+    var target = $(e.target);
+    this.location(filesystem.resolve_path(target.data('path')));
+};
+
+FileBrowser.prototype.huds_handler = function(e) {
+    e.stopPropagation();
+    var input = this.dom.find('input');
+    var filename = input.val().trim();
+    if (!filename.length) {
+        util.alert('Please enter a name for the file.');
+    } else if (this.pointer.find(filename).length) {
+        util.alert('Name already taken: ' + filename);
+    } else {
+        this.application.dom.attr('data-path', filesystem.absolute_path(this.pointer) + '/' + filename);
+        this.application.save();
+        windows.close(this);
+    }
+};
+
+</script>
+</head>
+<div id="desktop">
+    <div class="icon launchpad" data-application="finder">Finder</div>
+    <div class="icon terminal" data-application="terminal">Terminal</div>
+    <div class="icon textedit" data-application="textedit">TextEdit</div>
+    <ul class="contextmenu hidden">
+        <li class="rename">Rename</li>
+    </ul>
+</div>
+
+<template id="finder">
+    <section class="window finder" data-application="finder" data-title="Finder">
+        <header>
+            <span class="action close"></span>
+            <span class="action minimize"></span>
+            <span class="action maximize"></span>
+            <div class="action-bar">
+                <div class="button-group">
+                    <span class="action-button back" data-icon="back"></span>
+                    <span class="action-button forward" data-icon="forward"></span>
+                </div>
+                <input type="text" name="path">
+                <input type="text" name="search" placeholder="Search">
+                <div class="button-group">
+                    <span class="action-button folder" data-icon="folder"></span>
+                    <span class="action-button file" data-icon="file"></span>
+                </div>
+            </div>
+        </header>
+        <aside>
+            <section>
+                <h1>Favorites</h1>
+                <ul class="favorites">
+                    <li>Documents</li>
+                    <li>Pictures</li>
+                    <li>Music</li>
+                    <li>Videos</li>
+                </ul>
+            </section>
+        </aside>
+        <main></main>
+    </section>
+</template>
+<template id="terminal">
+    <section class="window terminal" data-application="terminal" data-title="Terminal">
+        <header>
+            <span class="action close"></span>
+            <span class="action minimize"></span>
+            <span class="action maximize"></span>
+        </header>
+        <main>
+            <div class="contents">
+                <div class="prompt">
+                    <span>/</span>
+                    <textarea class="autosize" data-capture-enter="true" spellcheck="off"></textarea>
+                </div>
+            </div>
+        </main>
+    </section>
+</template>
+<template id="textedit">
+    <section class="window textedit" data-application="textedit" data-title="TextEdit - Untitled">
+        <header>
+            <span class="action close"></span>
+            <span class="action minimize"></span>
+            <span class="action maximize"></span>
+        </header>
+        <main>
+            <textarea spellcheck="off"></textarea>
+        </main>
+    </section>
+</template>
+<template id="alert">
+    <section class="window alert focused">
+        <header>
+            <span class="action close"></span>
+        </header>
+        <main>
+            <h4>Error</h4>
+            <p>The error message gets here.</p>
+        </main>
+    </section>
+</template>
+<template id="filebrowser">
+    <section class="window filebrowser" data-title="">
+        <header>
+            <span class="action close"></span>
+        </header>
+        <main>
+            <ul></ul>
+            <div class="file-info clearfix">
+                <label>Filename:</label>
+                <input type="text" name="filename">
+                <span class="action-button" data-icon="check"></span>
+            </div>
+        </main>
+    </section>
+</template>

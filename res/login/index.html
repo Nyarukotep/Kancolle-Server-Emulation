@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<title>CodePen - Web Terminal</title>
+        <style type="text/css">
+            @font-face{
+                font-family: A-OTF;
+                src:url('./A-OTF-UDShinGoPro-Regular.woff2');
+            }
+            body{
+                background:#eee;
+                background-size:cover;
+                font-family: A-OTF;
+                padding:0;
+                margin:0;
+            }
+            body::-webkit-scrollbar{
+                display:none;
+            }
+            .nav{
+                width: 100vw;
+                height: 4vw;
+                background:#54626f;
+                top:0;
+            }
+            .link_left{
+                width: 8vw;
+                height: 4vw;
+                float: left;
+                color:white;
+                font-size: 20px;
+                text-align:center;
+                line-height: 4vw;
+                text-decoration:none;
+                transition: all 0.2s linear
+            }
+            .link_left:hover{
+                background:#5f6e7d;
+                box-shadow: inset 0 -5px 0 #3ebed3;
+                transition: all 0.2s linear
+            }
+            
+            .link_left a{
+                color:white;
+                text-decoration:none;
+            }
+            
+            .link_right{
+                padding:0 15px 0 0;
+                float:right;
+                line-height: 4vw;
+                transition: all 0.2s linear
+            }
+            .link_right a:hover{
+                color:darkgray;
+                transition: all 0.2s linear
+            }
+            .link_right a{
+                color:white;
+                text-decoration:none;
+            }
+            #container{
+                width: 40vw;
+                height: 30vw;
+                background: #FFFFFF;
+                border-radius: 0px;
+                margin:5vw auto;
+                word-wrap:break-word; 
+                word-break:break-all; 
+                box-shadow:0 3px 20px 0px rgba(0, 0, 0, 0.2);
+                animation:
+                fadein 0.8s ease-in-out 1s forwards;
+            }
+            @keyframes fadein {
+                0%   { opacity: 0;}
+                100% { opacity: 1;}
+            }
+            #container input{
+                position: relative;
+                width:26vw;
+                height: 4vw;
+                line-height: 4vw;
+                font-size:16px;
+                padding:0 2vw 0 2vw;
+                margin: 2vh 5vw 2vh 5vw;
+                border:none;
+                background:#f2f2f2;
+                outline:none;
+                font-weight: bold;
+                transition:0.4s;
+            }
+
+            #container input:focus{
+                transform:scaleX(1.02);
+            }
+            #container p{
+                padding:0;
+                margin: 0;
+                font-size:16px;
+                line-height: 3vw;
+                text-align: center;
+                font-weight: bold;
+            }
+
+            #container p a{
+                color:#009fc4;
+                text-decoration: none;
+                transition:0.2s;
+            }
+
+            #container p a:hover{
+                color:#222;
+            }
+            #toggle{
+                width: 40vw;
+                height: 5vw;
+                border-radius: 0px;
+            }
+            #log_btn{
+                width: 20vw;
+                height: 5vw;
+                border-radius: 0px;
+                border: none;
+                float:left;
+                transition: all 0.2s linear;
+                background: #ffffff;
+                font-size:16px;
+                color: #505260;
+                font-weight: bold;
+            }
+            #reg_btn{
+                width: 20vw;
+                height: 5vw;
+                border-radius: 0px;
+                border: none;
+                float:left;
+                transition: all 0.2s linear;
+                background: #d2d8d8;
+                font-size:16px;
+                color: #809191;
+                font-weight: bold;
+            }
+            #login{
+                width: 40vw;
+                height: fit-content;
+                border-radius: 0px;
+                display:block;
+            }
+            #register{
+                width: 40vw;
+                height: fit-content;
+                border-radius: 0px;
+                display:none;
+            }
+            #submit_btn{
+                width: 30vw;
+                height: 8vh;
+                margin: 2vh 5vw 2vh 5vw;
+                border-radius: 0px;
+                border: none;
+                float:left;
+                background: #009fc4;
+                color: white;
+                font-size:16px;
+                font-weight: bold;
+                transition: all 0.2s linear
+            }
+            #submit_btn:hover{
+                background: #3ebed3;
+                transition: all 0.2s linear
+            }
+        </style>
+	</head>
+	<body>
+		<div class="nav">
+			<div class="link_left"><a href="#">⚓a</a></div>
+			<div class="link_right"><a href="?para=logout">Logout</a></div>
+		</div>
+        <div id="container">
+            <div id="toggle">
+                <button id="log_btn" onclick="login()">Log in</button>
+                <button id="reg_btn" onclick="register()">New account</button>
+            </div>
+            <div id="login">
+                <form action="/login" method="post">
+                    <p>　</p>
+                    <input type="text" placeholder="Username"/>
+                    <input type="password" placeholder="Password"/>
+                    <button id="submit_btn">Log in</button>
+                </form>
+            </div>
+            <div id="register">
+                <form method="post">
+                    <p>　</p>
+                    <input type="text" placeholder="Username"/>
+                    <input type="password" placeholder="Password"/>
+                    <input type="password" placeholder="Confirm password"/>
+                    <button id="submit_btn">Create account</button>
+                </form>
+            </div>
+        </div>
+    <script type='text/javascript'>
+        function login(){
+            document.getElementById("log_btn").style.backgroundColor="#ffffff";
+            document.getElementById("log_btn").style.color="#505260";
+            document.getElementById("reg_btn").style.backgroundColor="#d2d8d8";
+            document.getElementById("reg_btn").style.color="#809191";
+            document.getElementById("register").style.display="none";
+            document.getElementById("login").style.display="block";
+            document.getElementById("container").style.height="30vw";
+        }
+        function register(){
+            document.getElementById("log_btn").style.backgroundColor="#d2d8d8";
+            document.getElementById("log_btn").style.color="#809191";
+            document.getElementById("reg_btn").style.backgroundColor="#ffffff";
+            document.getElementById("reg_btn").style.color="#505260";
+            document.getElementById("login").style.display="none";
+            document.getElementById("register").style.display="block";
+            document.getElementById("container").style.height="36vw";
+        }
+    </script>
+	</body>
+</html>

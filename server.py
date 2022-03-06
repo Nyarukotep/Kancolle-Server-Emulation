@@ -1,67 +1,50 @@
-import asyncio, numpy, socket
-import framework as prot
-import emulation as kse
-#Request
-#method url version
-#GET /images/logo.png HTTP/1.1
-#Host: hostname
-#request req response rsp Client clnt permconn
-#Response:
-# HTTP/1.1 200 OK
-#version status phrase header body
-class server:
-    def __init__(self, ip = 'localhost', port = 11456):
-        self.ip = ip
-        self.port = port
-        self.timeout = 5
-        self.loop = asyncio.new_event_loop()
-    
-    def start(self, func = kse.asg):
-        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        while True:
-            try:
-                self.server.bind((self.ip, self.port))
-                break
-            except OSError:
-                self.port = self.port+1
-        self.server.listen()
-        self.server.setblocking(False)
-        self.func = func
-        print('Start server at %s:%d' %(self.ip, self.port))
-        self.loop.run_until_complete(self.listen())
-    
-    async def listen(self):
-        while True:
-            conn, addr = await self.loop.sock_accept(self.server)
-            self.loop.create_task(self.connection(conn,addr))
-    
-    async def connection(self, conn, addr):
-        print(addr,'Start connection')
-        tag = 0
-        #tag, 0: standard; 1: websocket
-        while True:
-            t = self.timeout
-            req = prot.id(tag,addr)
-            try:
-                await req.recv(self.loop, conn) #message from client
-            except:
-                conn.close()
-                return
-            print(req)
-            rsp = self.func(req)
-            await self.loop.sock_sendall(conn, rsp)
-            print(addr, 'Complete response')
-            if req.header.get('Connection','None') != 'keep-alive':
-                print(addr, 'Connection close')
-                break
-            print(addr, 'Connection reuse')
+import asynsrv, kse
+import time
+def asg(reqd, param):
+    if 'FIN' in reqd:
+        if 'Time' in reqd['body']:
+            msg = {'WSPUSH':int(reqd['body'].split()[1]), 'body':b'time'}
+            return msg, param
+        else:
+            msg = {'body':reqd['body'].encode()}
+            return msg, param
+    elif 'WSPUSH' in reqd:
+        return {'WSPUSH':1,'PUSHID':1, 'body': time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()).encode()},param
+    else:
+        cat={
+            '/':hw,
+        }
+        task = cat.get(reqd['target'], hw)
+        return task(reqd, param)
 
-        conn.close()
-        print(addr, 'Connection close')
+def ws(reqd, param):
+    body=template('ws.html')
+    addr = 'ws://'+param['SVRIP'] + ':' + str(param['SVRPORT'])
+    body = body.replace('$websocket$', addr)
+    print(body)
+    msg = {'AUTH': 1,
+            'text': 'ws',
+            'body': body.encode()}
+    return msg, param
+def hw(reqd, param):
+    db = kse.database('data.db')
+    msg = {'AUTH': 1,
+        'text': 'Hello World',
+        'body': db.select('$resource', ['content'], ['id','login'])[0][0]}
+    if param['WSCONN']:
+        wsdict = {}
+        for key in param['WSCONN']:
+            wsdict[key] = {'body':b'helloworld'}
+        msg['WSPUSH'] = wsdict
+    return msg, param
 
+def template(filename):
+    f=open(filename,'r',encoding='utf-8')
+    return f.read()
 
-    async def recv(self,conn):
-        data = await self.loop.sock_recv(conn,1024)
-        return data
-s=server()
-s.start(kse.asg)
+param = {'db': kse.database('data.db'),
+        'USER':{},
+        'WSTOKEN':{}
+        }
+s=asynsrv.server()
+s.start(kse.route,param)

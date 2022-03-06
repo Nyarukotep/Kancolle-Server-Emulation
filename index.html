@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<title>$Title$</title>
+	<style type="text/css">
+		@font-face {
+			font-family: A-OTF;
+			src: url('UDShinGoPro_Regular.woff2');
+		}
+
+		body {
+			background: #eee;
+			background-size: cover;
+			font-family: A-OTF;
+			padding: 0;
+			margin: 0;
+		}
+
+		body::-webkit-scrollbar {
+			display: none;
+		}
+
+		.nav {
+			width: 100vw;
+			height: 4vw;
+			background: #54626f;
+			top: 0;
+		}
+
+		.link_left {
+			width: 8vw;
+			height: 4vw;
+			float: left;
+			color: white;
+			font-size: 20px;
+			text-align: center;
+			line-height: 4vw;
+			text-decoration: none;
+			transition: all 0.2s linear
+		}
+
+		.link_left:hover {
+			background: #5f6e7d;
+			box-shadow: inset 0 -5px 0 #3ebed3;
+			transition: all 0.2s linear
+		}
+
+		.link_left a {
+			color: white;
+			text-decoration: none;
+		}
+
+		.link_right {
+			padding: 0 15px 0 0;
+			float: right;
+			line-height: 4vw;
+			transition: all 0.2s linear
+		}
+
+		.link_right a:hover {
+			color: darkgray;
+			transition: all 0.2s linear
+		}
+
+		.link_right a {
+			color: white;
+			text-decoration: none;
+		}
+
+		#kse {
+			width: 90vw;
+			height: 36vw;
+			background: url('background.png');
+			border-radius: 0px;
+			padding: 0;
+			margin: 5vw auto;
+			word-wrap: break-word;
+			word-break: break-all;
+			box-shadow: 0 3px 20px 0px rgba(0, 0, 0, 0.2);
+		}
+
+		.userEnteredText {
+			color: rgba(255, 255, 255, 0.5);
+			margin: 0;
+			padding: 0;
+			display: inline-block;
+			word-wrap: break-word;
+			word-break: break-all;
+		}
+
+		#game {
+			width: 64vw;
+			height: 36vw;
+			padding: 0;
+			margin: 0;
+			background: rgba(0, 0, 0, 0.1);
+			float: left;
+			display: grid;
+		}
+
+		#termop {
+			width: 26vw;
+			height: 32vw;
+			padding: 0px;
+			margin: 0;
+			background: rgba(0, 0, 0, 0.1);
+			float: left;
+			overflow-y: auto;
+			font-size: 14px;
+			line-height: 26px;
+			color: rgba(255, 255, 255, 0.9);
+			font-family: A-OTF;
+			text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+		}
+
+
+		#termop a {
+			color: rgba(255, 255, 255, 0.9);
+			text-decoration: none;
+		}
+
+		#termop a:hover {
+			text-decoration: underline;
+		}
+
+		#termop::-webkit-scrollbar {
+			opacity: 0;
+			width: 6px;
+		}
+
+		#termop::-webkit-scrollbar-track {
+			opacity: 0;
+		}
+
+		#termop::-webkit-scrollbar-track:hover {
+			opacity: 0;
+		}
+
+		#termop::-webkit-scrollbar-thumb {
+			background-color: rgba(62, 190, 211, 0.8);
+			border-radius: 0px;
+		}
+
+		#termop::-webkit-scrollbar-button {
+			display: none
+		}
+
+		#termip {
+			width: 26vw;
+			height: 4vw;
+			padding: 0;
+			margin: 0;
+			border: 0;
+			background: rgba(0, 0, 0, 0.1);
+			float: right;
+			font-family: A-OTF;
+			font-size: 14px;
+			line-height: 26px;
+			cursor: default;
+			outline: none;
+			color: rgba(255, 255, 255, 0.9);
+			text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+		}
+	</style>
+</head>
+
+<body onload="init()">
+	<div class="nav">
+		<div class="link_left"><a href="#">⚓a</a></div>
+		<div class="link_right"><a href="#">Logout</a></div>
+	</div>
+	<div id="kse">
+		<div id="game">
+			helloworld!
+		</div>
+		<div id="termop">
+		</div>
+		<div id="div1">
+			<input id="termip" type="text" onkeydown="ok(event)" onclick="oc()" oninput="oi()" onfocus="oc()"
+				autocomplete="off" value="❯ ">
+		</div>
+	</div>
+	<script type='text/javascript'>
+		var socket;
+		function init() {
+			var host = "$ws$";
+			try {
+				socket = new WebSocket(host);
+				socket.onopen = function (msg) {
+					log("Start WebSocket connection");
+				}
+				socket.onmessage = function (msg) {
+					if (msg.data.includes("$kse")) {
+						kse(msg.data);
+					}
+					else {
+						log(msg.data);
+					}
+
+
+				}
+				socket.onclose = function (msg) {
+					log("Connection Lose");
+				}
+				socket.onerror = function (msg) {
+					console.log("Error");
+				}
+			} catch (ex) {
+				log(ex);
+			}
+
+		}
+		function send() {
+			var txt, msg;
+			txt = $("termip");
+			msg = txt.value;
+			msg = msg.split('❯ ')[1]
+			console.log("message is", msg)
+			if (!msg) {
+				log("Message can not be empty");
+				return;
+			}
+			txt.value = "❯ ";
+			txt.focus();
+			try {
+				socket.send(msg);
+			} catch (ex) {
+				log(ex);
+			}
+		}
+
+		window.onbeforeunload = function () {
+			try {
+				socket.send('quit');
+				socket.close();
+				socket = null;
+			} catch (ex) {
+				log(ex);
+			}
+		}
+
+		function $(id) {
+			return document.getElementById(id);
+		}
+		function kse(msg) {
+			msg = msg.split('$kse ')[1]
+			$("game").innerHTML = msg;
+		}
+		function log(msg) {
+			$("termop").innerHTML += msg + "<br>" + "❯ ";
+			$('termop').scrollTop = $('termop').scrollHeight;
+		}
+
+		function ok(event) {
+			switch (event.keyCode) {
+				case 13:
+					send();
+				case 8:
+					if (($("termip").value).length <= 2) {
+						event.preventDefault();
+					}
+				case 37:
+					if ($("termip").selectionStart <= 2 || $("termip").selectionEnd <= 2) {
+						event.preventDefault();
+					}
+			}
+		}
+		function oc() {
+			if ($("termip").selectionStart <= 2 || $("termip").selectionEnd <= 2) {
+				$("termip").setSelectionRange(2, 2);
+			}
+		}
+		function oi() {
+			if (($("termip").value).slice(0, 2) != '❯ ') {
+				$("termip").value = "❯ ";
+			}
+		}
+	</script>
+</body>
+</html>
