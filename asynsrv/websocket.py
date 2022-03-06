@@ -1,25 +1,34 @@
-__all__ = ['wstoken', 'wsrecv', 'wssend']
-import base64,hashlib
-from cmath import exp
 import asyncio
-
-def wstoken(wskey):
-    GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
-    wskey = wskey + GUID
-    return base64.b64encode(hashlib.sha1(wskey.encode('utf-8')).digest()).decode()
-
-class wsrecv:
-    def __init__(self, loop, addr):
-        self.data = {}
-        self.data['addr'] = addr
+__all__ = ['websocket', 'wssend']
+class websocket:
+    def __init__(self, loop, conn, addr):
         self.loop = loop
+        self.conn = conn
+        self.addr = addr
+        self.data = {}
+        self.data['type'] = 'websocket'
+        self.data['addr'] = addr
         self.cache = b''
         self.body = ''
+
+    def __call__(self):
+        return self.data
     
-    async def recv(self, conn):
+    def exit(self, param):
+        param['ws_list'].pop(self.addr)
+        self.conn.close()
+        msg = {
+            'type': 'websocket',
+            'addr': self.addr,
+            'body': 'exit',
+        }
+        return msg, param
+
+
+    async def recv(self):
         while True:
             while self.data.get('length',1):
-                buffer = await self.loop.sock_recv(conn,1024)
+                buffer = await self.loop.sock_recv(self.conn,1024)
                 if buffer:
                     self.parse(buffer)
                 else:
@@ -70,29 +79,22 @@ class wsrecv:
         self.data.pop('body')
         self.cache = b''
 
-    def __repr__(self):
-        return 'Data:\n\t' + '\n\t'.join(['%s:%s' % item for item in self.data.items()])\
-            + '\nBody:\n\t'+self.body\
-            + '\ncache:\n\t'+ repr(self.cache)
-
-class wssend:
-    def __init__(self, loop, wsreq, upg):
-        self.loop = loop
-        self.data = {'FIN': 0b1,
+    async def send(self,msg):
+        if self.data['opcode'] == 9:
+            self.data = {
+                'FIN': 0b1,
+                'RSV': 0b000,
+                'opcode':0b1010,
+                'body': b'',
+            }
+        else:
+            self.data = {
+                'FIN': 0b1,
                 'RSV': 0b000,
                 'opcode':0b1,
                 'body': b'',
-                }
-        if upg:
-            self.data.update(upg)
-        else:
-            if wsreq['opcode'] == 9:
-                self.data['opcode'] == 10
-            else:
-                self.data['body'] = b'exit'
-
-    async def send(self, conn):
-        if self.data.pop('AUTH', 1):
+            }
+            self.data.update(msg)
             msg = b''
             fstr = (((self.data['FIN']<<3)^self.data['RSV'])<<4)^self.data['opcode']
             msg += bytes.fromhex('{0:0{1}x}'.format(fstr, 2))
@@ -106,11 +108,39 @@ class wssend:
                 msg += b'\x7f'
                 msg += bytes.fromhex('{0:0{1}x}'.format(len(body), 16))
             msg += body
-            print(msg)
-            await self.loop.sock_sendall(conn, msg)
-        else:
-            err = b'HTTP/1.1 404\r\n'\
-                  b'Connection: keep-alive\r\n'\
-                  b'Content-Length: 22\r\n\r\n'\
-                  b'<h1>404 not found</h1>'
-            await self.loop.sock_sendall(conn, err)
+            print('wssend:', msg)
+            await self.loop.sock_sendall(self.conn, msg)
+            self.clear()
+
+    def clear(self):
+        self.data = {
+            'type': 'websocket',
+            'addr': self.addr,
+        }
+        self.cache = b''
+        self.body = ''
+
+async def wssend(loop, conn, addr, msg):
+    data = {
+        'FIN': 0b1,
+        'RSV': 0b000,
+        'opcode':0b1,
+        'body': b'',
+    }
+    data.update(msg)
+    msg = b''
+    fstr = (((data['FIN']<<3)^data['RSV'])<<4)^data['opcode']
+    msg += bytes.fromhex('{0:0{1}x}'.format(fstr, 2))
+    body = data['body']
+    if len(body) < 126:
+        msg += bytes.fromhex('{0:0{1}x}'.format(len(body), 2))
+    elif len(body) < 65536:
+        msg += b'\x7e'
+        msg += bytes.fromhex('{0:0{1}x}'.format(len(body), 4))
+    else:
+        msg += b'\x7f'
+        msg += bytes.fromhex('{0:0{1}x}'.format(len(body), 16))
+    msg += body
+    print(msg)
+    await loop.sock_sendall(conn, msg)
+        

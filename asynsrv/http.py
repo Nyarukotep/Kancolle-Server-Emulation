@@ -1,15 +1,23 @@
 import asyncio
-from .websocket import wstoken
-__all__ = ['httpreq', 'httprsp']
-class httpreq:
-    def __init__(self, addr):
+import base64,hashlib
+__all__ = ['http']
+class http:
+    def __init__(self, loop, conn, addr, timeout):
+        self.loop = loop
+        self.conn = conn
+        self.timeout = timeout
         self.data = {}
+        self.data['type'] = 'http'
         self.data['addr'] = addr
         self.cache = ''
-    async def recv(self, loop, conn, timeout):
+
+    def __call__(self):
+        return self.data
+
+    async def recv(self):
         while self.data.get('Content-Length',1):
             try:
-                buffer = await asyncio.wait_for(self.sock_recv(loop, conn),timeout)
+                buffer = await asyncio.wait_for(self.sock_recv(self.loop, self.conn), self.timeout)
             except asyncio.TimeoutError:
                 print(self.data['addr'], 'Connection close due to timeout')
                 raise Exception
@@ -60,50 +68,47 @@ class httpreq:
             self.data['Content-Length'] = self.data['Content-Length'] - len(self.cache[:t])
             self.cache = self.cache[t:]
 
-    def __repr__(self):
-        return '\nRequest content\n'+\
-            '\n'.join(['%s: %s' % item for item in self.data.items()])
-
-class httprsp:
-    def __init__(self, msg, dreq):
-        self.data = {'version': 'HTTP/1.1',
-                     'code': '200',
-                     'text': 'OK'}
-        self.data['Connection'] = dreq.get('Connection', 'close')
-        self.data.update(msg)
-        if 'Sec-WebSocket-Key' in dreq:
-            self.data.pop('body')
-            self.wsrsp(dreq['Sec-WebSocket-Key'])
-        else:
-            self.data['Content-Type'] = 'Content-Type: text/html; charset=utf-8'
-    def wsrsp(self,key):
-        self.data['code'] = '101'
-        self.data['text'] = 'Switching Protocols'
-        self.data['Connection'] = 'Upgrade'
-        self.data['Sec-WebSocket-Accept'] = wstoken(key)
-        self.data['Upgrade'] = 'websocket'
-
-    async def send(self, loop, conn):
-        if self.data.pop('AUTH', 0):
-            rsp = ''
-            rsp += ' '.join([self.data.pop(k) for k in ['version', 'code', 'text']])
-            rsp += '\r\n'
-            if 'body' in self.data:
-                body = self.data.pop('body')
-                self.data['Content-Length'] = len(body)
-                rsp += '\r\n'.join(['%s: %s' % item for item in self.data.items()])
-                rsp += '\r\n\r\n'
-                rsp = rsp.encode() + body
+    async def send(self, msg):
+        if msg:
+            if 'Sec-WebSocket-Key' in self.data:
+                wskey = self.data['Sec-WebSocket-Key']
+                GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
+                wskey += GUID
+                wstoken = base64.b64encode(hashlib.sha1(wskey.encode('utf-8')).digest()).decode()
+                self.data = {
+                    'version': 'HTTP/1.1',
+                    'code': '101',
+                    'text':'Switching Protocols',
+                    'Connection': 'Upgrade',
+                    'Sec-WebSocket-Accept': wstoken,
+                    'Upgrade': 'websocket',
+                }
             else:
+                connection = self.data.get('Connection', 'close')
+                self.data = {
+                    'version': 'HTTP/1.1',
+                    'code': '200',
+                    'text': 'OK',
+                    'Connection': connection,
+                }
+                self.data.update(msg)
+        else:
+            self.data = {
+                'version': 'HTTP/1.1',
+                'code': '404',
+            }
+        rsp = ''
+        rsp += ' '.join([self.data.pop(k) for k in ['version', 'code', 'text']])
+        rsp += '\r\n'
+        if 'body' in self.data:
+            body = self.data.pop('body')
+            if isinstance(body, str): body = body.encode()
+            self.data['Content-Length'] = len(body)
+            rsp += '\r\n'.join(['%s: %s' % item for item in self.data.items()])
+            rsp += '\r\n\r\n'
+            rsp = rsp.encode() + body
+        else:
                 rsp += '\r\n'.join(['%s: %s' % item for item in self.data.items()])
                 rsp += '\r\n\r\n'
                 rsp = rsp.encode()
-        else:
-            rsp = b'HTTP/1.1 404\r\n'\
-                  b'Connection: keep-alive\r\n'\
-                  b'Content-Length: 22\r\n\r\n'\
-                  b'<h1>404 not found</h1>'
-        await loop.sock_sendall(conn, rsp)
-    def __repr__(self):
-        return '\nResponse content\n'+\
-            '\n'.join(['%s: %s' % item for item in self.data.items()])
+        await self.loop.sock_sendall(self.conn, rsp)

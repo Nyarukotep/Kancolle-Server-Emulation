@@ -1,72 +1,69 @@
-import http
 from .database import database
 from .login import login
 import uuid
-def route(msg, param):
-    print('114514', param['WSTOKEN'])
-    msg_type = pid(msg)
+def route(input, param):
     cat = {
-        'hypertext': hypertext,
-        'protupgrade': protupgrade,
+        'http': hypertext,
         'websocket': websocket,
+        'wswait': wswait,
     }
-    func = cat.get(msg_type, hypertext)
-    return func(msg, param)
+    func = cat.get(input['type'], hypertext)
+    return func(input, param)
 
-def pid(msg):
-    if 'version' in msg:
-        if msg.get('Upgrade', 0) == 'websocket':
-            return 'protupgrade'
-        else:
-            return 'hypertext'
-    else:
-        return 'websocket'
-
-def hypertext(msg, param):
-    user = cookie(msg, param)
+def hypertext(input, param):
+    user = cookie(input, param)
     if user:
         cat = {
             '/': newconn,
+            '/ws': protupgrade,
             '/background.png': resource,
             '/favicon.ico': resource,
             '/UDShinGoPro_Regular.woff2': resource,
         }
-        func = cat.get(msg['target'], newconn)
-        return func(msg, param)
+        func = cat.get(input['target'], newconn)
+        return func(input, param)
     else:
         cat = {
             '/': login,
             '/favicon.ico': resource,
             '/UDShinGoPro_Regular.woff2': resource,
         }
-        func = cat.get(msg['target'], redirect)
-        return func(msg, param)
-    
-def protupgrade(msg, param):
-    print('accept wsup')
-    user = cookie(msg, param)
+        func = cat.get(input['target'], redirect)
+        return func(input, param)
+
+def protupgrade(input, param):
+    user = cookie(input, param)
     if user:
-        param['WSTOKEN'][msg['Cookie']['token']] = msg['addr']
+        param['ws_token'][input['addr']] = user
         msg = {'AUTH': 1,
-        'body':b''
+        'body':b'start'
         }
     return msg, param
 
-def websocket(msg, param):
-    msg = {'body':msg['body'].encode()}
-    return msg, param
+def websocket(input, param):
+    if input['body'] == 'exit':
+        param['ws_token'].pop(input['addr'], 0)
+        return {}, param
+    else:
+        msg = {'body':input['body'].encode()}
+        if input['body'] == 'wstoken': print(param['ws_token'])
+        if input['body'] == 'token': print(param['token'])
+        return msg, param
 
-def cookie(msg, param):
-    if 'Cookie' not in msg:
+def wswait():
+    a=1
+
+def cookie(input, param):
+    if 'Cookie' not in input:
         return 0
     else:
-        token = msg['Cookie']['token']
-        if token in param['USER']:
-            return param['USER'][token]
+        token = input['Cookie']['token']
+        if token in param['token']:
+            return param['token'][token]
         else:
             return 0
 
-def redirect(msg, param):
+def redirect(input, param):
     msg = {'AUTH': 1,
         'code': '303',
         'text': 'See Other',
@@ -74,15 +71,18 @@ def redirect(msg, param):
         }
     return msg, param
 
-def newconn(msg, param):
-    oldtoken = msg['Cookie']['token']
-    wsaddr = param['WSTOKEN'][oldtoken]
-    param['WSCONN'][wsaddr].close()
+def newconn(input, param):
+    oldtoken = input['Cookie']['token']
+    user = param['token'][oldtoken]
+    ws_push = {}
+    for key in param['ws_token']:
+        if param['ws_token'][key] == user:
+            ws_push[key] = {'body':b'exit',}
     newtoken = str(uuid.uuid4())
-    param['USER'][newtoken] = param['USER'].pop(oldtoken)
+    param['token'][newtoken] = param['token'].pop(oldtoken)
     body = param['db'].blob('$resource', 'index')
-    body = body.replace(b'$Title$',b'KSE - ' + param['USER'][newtoken].encode())
-    addr = 'ws://'+param['SVRIP'] + ':' + str(param['SVRPORT'])
+    body = body.replace(b'$Title$',b'KSE - ' + param['token'][newtoken].encode())
+    addr = 'ws://'+param['ip'] + ':' + str(param['port']) + '/ws'
     body = body.replace(b'$ws$', addr.encode())
     msg = {
         'AUTH': 1,
@@ -90,13 +90,11 @@ def newconn(msg, param):
         'Set-Cookie': 'token=' + newtoken,
         'body': body,
     }
-    print('WSCONN1',param['WSCONN'])
-    print('WSTOKEN1',param['WSTOKEN'])
-    print('user1',param['USER'])
+    if ws_push: msg['ws_push'] = ws_push
     return msg, param
 
-def resource(msg, param):
-    file_name = msg['target'].rsplit("/",1)[1]
+def resource(input, param):
+    file_name = input['target'].rsplit("/",1)[1]
     file_type = file_name.rsplit(".",1)[1]
     cat = {
         'png': 'image/png',

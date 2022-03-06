@@ -26,10 +26,13 @@ def login(msg, param):
                     return msg, param
                 if pwd == userinfo[1]:
                     token = str(uuid.uuid4())
-                    param['USER'][token] = userinfo[0]
+                    for key in list(param['token']):
+                        if param['token'][key] == userinfo[0]:
+                            param['token'].pop(key)
+                    param['token'][token] = userinfo[0]
                     body = param['db'].blob('$resource', 'index')
                     body = body.replace(b'$Title$',b'KSE - ' + userinfo[0].encode())
-                    addr = 'ws://'+param['SVRIP'] + ':' + str(param['SVRPORT'])
+                    addr = 'ws://'+param['ip'] + ':' + str(param['port']) + '/ws'
                     body = body.replace(b'$ws$', addr.encode())
                     msg = {'AUTH': 1,
                         'text': 'OK',

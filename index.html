@@ -195,6 +195,9 @@
 					if (msg.data.includes("$kse")) {
 						kse(msg.data);
 					}
+					else if (msg.data == 'exit') {
+						socket.close();
+					}
 					else {
 						log(msg.data);
 					}
@@ -222,6 +225,12 @@
 				log("Message can not be empty");
 				return;
 			}
+			if (msg == 'exit') {
+				socket.close();
+				txt.value = "❯ ";
+				txt.focus();
+				return;
+			}
 			txt.value = "❯ ";
 			txt.focus();
 			try {
@@ -233,7 +242,6 @@
 
 		window.onbeforeunload = function () {
 			try {
-				socket.send('quit');
 				socket.close();
 				socket = null;
 			} catch (ex) {
