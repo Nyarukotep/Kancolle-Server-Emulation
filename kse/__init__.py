@@ -16,6 +16,7 @@ def hypertext(input, param):
         cat = {
             '/': newconn,
             '/ws': protupgrade,
+            '/logout': logout,
             '/background.png': resource,
             '/favicon.ico': resource,
             '/UDShinGoPro_Regular.woff2': resource,
@@ -108,12 +109,17 @@ def resource(input, param):
         }
     return msg, param
 
-
-def test():
-    str='成功'
-    str = str.encode('unicode-escape')
-    msg = b'HTTP/1.1 Hello World\r\n'\
-        b'Connection: keep-alive\r\n'\
-        b'Content-Length: 20\r\n\r\n'\
-        b'<h1>Hello World</h1>'
-    return msg
+def logout(input, param):
+    token = input['Cookie']['token']
+    user = param['token'].pop(token)
+    ws_push = {}
+    for key in param['ws_token']:
+        if param['ws_token'][key] == user:
+            ws_push[key] = {'body':b'exit',}
+    msg = {'AUTH': 1,
+        'code': '303',
+        'text': 'See Other',
+        'Location': '/',
+        }
+    if ws_push: msg['ws_push'] = ws_push
+    return msg, param    

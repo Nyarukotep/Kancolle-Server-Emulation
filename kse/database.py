@@ -28,5 +28,12 @@ class database:
     def blob(self, table_name, id):
         return self.select(table_name, ['content'], ['id', id])[0][0]
 
+    def indb(self, target):
+        cat = {
+            '/': '$resource',
+        }
+        return cat.get(target,0)
+
     def exit(self):
         self.conn.close()
+    SELECT * FROM COMPANY WHERE AGE IN ( 25, 27 );

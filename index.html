@@ -169,11 +169,10 @@
 <body onload="init()">
 	<div class="nav">
 		<div class="link_left"><a href="#">⚓a</a></div>
-		<div class="link_right"><a href="#">Logout</a></div>
+		<div class="link_right"><a href="/logout">Logout</a></div>
 	</div>
 	<div id="kse">
 		<div id="game">
-			helloworld!
 		</div>
 		<div id="termop">
 		</div>
@@ -210,6 +209,11 @@
 				socket.onerror = function (msg) {
 					console.log("Error");
 				}
+			} catch (ex) {
+				log(ex);
+			}
+			try {
+				socket.send('ksestart');
 			} catch (ex) {
 				log(ex);
 			}
