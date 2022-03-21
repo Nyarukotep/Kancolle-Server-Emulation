@@ -5,35 +5,32 @@ class database:
         self.conn = sqlite3.connect(path)
         self.conn.isolation_level = None
     def insert(self, table_name, content):
-        if isinstance(content, list): content = tuple(content)
-        sql = 'INSERT INTO \'$table_name\' VALUES ' + str(content)
+        content = tuple(content)
+        sql = 'INSERT INTO \'' + table_name + '\' VALUES ' + str(content)
         self.conn.execute(sql.replace('$table_name', table_name))
-    def delete(self, table_name, filter):
-        if isinstance(filter, str):
-            sql = 'DELETE FROM \'$table_name\' WHERE ' + filter
-            self.conn.execute(sql.replace('$table_name', table_name))
+    def update(self, table_name, column, column_value, row, row_value):
+        row_value = tuple(row_value)
+        sql = 'UPDATE \''+ table_name + '\' SET '
+        sql += ', '.join([column[i]+'=\''+column_value[i]+'\'' for i in range(len(column))])
+        self.conn.execute(sql)
+    def delete(self, table_name, row, row_value):
+        row_value = tuple(row_value)
+        sql = 'DELETE FROM \''+ table_name + '\' WHERE '
+        sql += row + 'IN ' + str(row_value)
+        self.conn.execute(sql)
+    def select(self, table_name, column, row, row_value):
+        row_value = tuple(row_value)
+        if column:
+            column = ', '.join(column)
         else:
-            sql = 'DELETE FROM \'$table_name\' WHERE ' + str(filter[0]) + '=\'' + str(filter[1]) + '\''
-            self.conn.execute(sql.replace('$table_name', table_name))
-    def select(self, table_name, column, filter):
-        column = str(column)[1:-1]
-        column = column.replace("'",'')
-        column = column.replace('"','')
-        if isinstance(filter, str):
-            sql = 'SELECT ' + column + ' FROM \'$table_name\' WHERE ' + filter
-            return self.conn.execute(sql.replace('$table_name', table_name)).fetchall()
-        else:
-            sql = 'SELECT ' + column + ' FROM \'$table_name\' WHERE ' + str(filter[0]) + '=\'' + str(filter[1]) + '\''
-            return self.conn.execute(sql.replace('$table_name', table_name)).fetchall()
+            column = '*'
+        sql = 'SELECT ' + column + ' FROM \''+ table_name+ '\' WHERE '
+        sql += row + 'IN ' + str(row_value)
+        result = self.conn.execute(sql).fetchall()
+        return [list(value) for value in result]
     def blob(self, table_name, id):
-        return self.select(table_name, ['content'], ['id', id])[0][0]
-
-    def indb(self, target):
-        cat = {
-            '/': '$resource',
-        }
-        return cat.get(target,0)
-
+        sql = 'SELECT content FROM \''+ table_name+ '\' WHERE id IN ' + str(tuple(id))
+        result = self.conn.execute(sql).fetchone()
+        return result
     def exit(self):
         self.conn.close()
-    SELECT * FROM COMPANY WHERE AGE IN ( 25, 27 );
